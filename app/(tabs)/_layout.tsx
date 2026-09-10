@@ -14,6 +14,7 @@ export default function TabLayout() {
     <Tabs.Screen name="track" options={{ title: "Track", tabBarIcon: ({ color }) => <IconSymbol name="location.fill" size={23} color={color} /> }} />
     <Tabs.Screen name="routes" options={{ title: "Routes", tabBarIcon: ({ color }) => <IconSymbol name="map.fill" size={23} color={color} /> }} />
     <Tabs.Screen name="nearby" options={{ title: "Nearby", tabBarIcon: ({ color }) => <IconSymbol name="mappin.and.ellipse" size={23} color={color} /> }} />
-    <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon: ({ color }) => <IconSymbol name="person.fill" size={23} color={color} /> }} />
+    <Tabs.Screen name="more" options={{ title: "More", tabBarIcon: ({ color }) => <IconSymbol name="ellipsis.circle.fill" size={23} color={color} /> }} />
+    <Tabs.Screen name="profile" options={{ href: null }} />
   </Tabs>;
 }

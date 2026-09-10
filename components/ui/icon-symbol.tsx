@@ -22,6 +22,7 @@ const MAPPING = {
   "map.fill": "map",
   "mappin.and.ellipse": "location-on",
   "person.fill": "person",
+  "ellipsis.circle.fill": "more-horiz",
 } as IconMapping;
 
 /**
