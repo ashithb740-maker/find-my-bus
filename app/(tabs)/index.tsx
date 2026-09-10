@@ -1,48 +1,35 @@
-import { ScrollView, Text, View, TouchableOpacity } from "react-native";
-
+import { MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
+import { BusMap } from "@/components/bus-map";
+import { Card, IconButton, PrimaryButton, SectionTitle, StatusPill } from "@/components/transport-ui";
+import { useColors } from "@/hooks/use-colors";
+import { useAppState } from "@/lib/app-state";
+import { searchTransport } from "@/lib/transport-data";
 
-/**
- * Home Screen - NativeWind Example
- *
- * This template uses NativeWind (Tailwind CSS for React Native).
- * You can use familiar Tailwind classes directly in className props.
- *
- * Key patterns:
- * - Use `className` instead of `style` for most styling
- * - Theme colors: use tokens directly (bg-background, text-foreground, bg-primary, etc.); no dark: prefix needed
- * - Responsive: standard Tailwind breakpoints work on web
- * - Custom colors defined in tailwind.config.js
- */
 export default function HomeScreen() {
-  return (
-    <ScreenContainer className="p-6">
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-        <View className="flex-1 gap-8">
-          {/* Hero Section */}
-          <View className="items-center gap-2">
-            <Text className="text-4xl font-bold text-foreground">Welcome</Text>
-            <Text className="text-base text-muted text-center">
-              Edit app/(tabs)/index.tsx to get started
-            </Text>
-          </View>
-
-          {/* Example Card */}
-          <View className="w-full max-w-sm self-center bg-surface rounded-2xl p-6 shadow-sm border border-border">
-            <Text className="text-lg font-semibold text-foreground mb-2">NativeWind Ready</Text>
-            <Text className="text-sm text-muted leading-relaxed">
-              Use Tailwind CSS classes directly in your React Native components.
-            </Text>
-          </View>
-
-          {/* Example Button */}
-          <View className="items-center">
-            <TouchableOpacity className="bg-primary px-6 py-3 rounded-full active:opacity-80">
-              <Text className="text-background font-semibold">Get Started</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </ScreenContainer>
-  );
+  const colors = useColors();
+  const { buses, isOffline, demoLocation } = useAppState();
+  const [query, setQuery] = useState("");
+  const [from, setFrom] = useState("Kottara");
+  const [to, setTo] = useState("Surathkal");
+  const activeBuses = buses.filter((bus) => bus.status !== "STOPPED");
+  const searchHint = useMemo(() => searchTransport(query), [query]);
+  const handleSearch = () => { if (!query.trim()) return; const match = searchHint.buses[0]; if (match) router.push(`/bus/${match.id}`); else router.push(`/search?q=${encodeURIComponent(query)}`); };
+  return <ScreenContainer className="px-5" edges={["top", "left", "right"]}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+      <View className="mb-5 flex-row items-center justify-between pt-2"><View className="flex-row items-center gap-3"><View style={{ backgroundColor: colors.primary }} className="h-11 w-11 items-center justify-center rounded-2xl"><MaterialIcons name="directions-bus" size={25} color="#FFFFFF" /></View><View><Text className="text-xl font-black tracking-tight text-foreground">Find My Bus</Text><Text className="text-xs font-semibold text-muted">Track your bus. Plan your journey.</Text></View></View><IconButton icon="account-circle" label="Profile" onPress={() => router.push("/(tabs)/profile")} /></View>
+      <View className="mb-4 flex-row items-center gap-2"><MaterialIcons name="near-me" size={17} color={colors.primary} /><Text className="text-sm font-semibold text-foreground">Current Location</Text><Text className="text-sm text-muted">• {demoLocation ? "Mangaluru demo area" : "Using device location"}</Text></View>
+      {isOffline ? <View style={{ backgroundColor: colors.warningSoft }} className="mb-4 flex-row items-center gap-2 rounded-2xl px-4 py-3"><MaterialIcons name="cloud-off" size={18} color={colors.warning} /><Text style={{ color: colors.warning }} className="flex-1 text-xs font-bold">Offline — showing last known information.</Text></View> : <View style={{ backgroundColor: colors.successSoft }} className="mb-4 flex-row items-center gap-2 rounded-2xl px-4 py-3"><MaterialIcons name="wifi" size={18} color={colors.success} /><Text style={{ color: colors.success }} className="flex-1 text-xs font-bold">Demo GPS feed active · updates every 4 sec</Text></View>}
+      <View className="mb-5"><Text className="mb-3 text-3xl font-black leading-9 text-foreground">What are you looking for?</Text><View style={{ borderColor: colors.border }} className="flex-row items-center rounded-2xl border bg-surface px-4"><MaterialIcons name="search" size={21} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} onSubmitEditing={handleSearch} placeholder="Search buses, routes, stops..." placeholderTextColor={colors.muted} returnKeyType="search" className="h-14 flex-1 pl-3 text-[15px] text-foreground" /><Pressable onPress={handleSearch}><Text style={{ color: colors.primary }} className="font-bold">Search</Text></Pressable></View>{query.length > 0 && <Pressable onPress={handleSearch} className="mt-2 flex-row items-center gap-2 rounded-xl bg-primarySoft px-3 py-2"><MaterialIcons name="north-east" size={16} color={colors.primary} /><Text style={{ color: colors.primary }} className="text-sm font-bold">Search all transport results for “{query}”</Text></Pressable>}</View>
+      <Card className="mb-5"><View className="mb-3 flex-row items-center justify-between"><View><Text className="text-lg font-black text-foreground">Plan your journey</Text><Text className="mt-1 text-xs text-muted">Compare direct routes and transfers</Text></View><MaterialIcons name="route" size={28} color={colors.primary} /></View><View className="gap-2"><View style={{ borderColor: colors.border }} className="flex-row items-center rounded-xl border px-3"><View style={{ backgroundColor: colors.primary }} className="h-2.5 w-2.5 rounded-full" /><TextInput value={from} onChangeText={setFrom} placeholder="From" placeholderTextColor={colors.muted} className="h-12 flex-1 pl-3 text-sm text-foreground" /></View><View className="ml-1 h-4 border-l border-dashed border-border" /><View style={{ borderColor: colors.border }} className="flex-row items-center rounded-xl border px-3"><View style={{ backgroundColor: colors.warning }} className="h-2.5 w-2.5 rounded-full" /><TextInput value={to} onChangeText={setTo} placeholder="To" placeholderTextColor={colors.muted} className="h-12 flex-1 pl-3 text-sm text-foreground" /></View></View><PrimaryButton title="Plan journey" icon="arrow-forward" onPress={() => router.push(`/plan?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`)} style={{ marginTop: 14 }} /></Card>
+      <View className="mb-5"><SectionTitle title="Track a bus" /><Card><View className="flex-row items-center gap-3"><View style={{ backgroundColor: colors.primarySoft }} className="h-11 w-11 items-center justify-center rounded-xl"><MaterialIcons name="gps-fixed" size={22} color={colors.primary} /></View><View className="flex-1"><Text className="font-bold text-foreground">Know exactly where it is</Text><Text className="mt-0.5 text-xs text-muted">Bus number or vehicle registration</Text></View></View><View style={{ borderColor: colors.border }} className="mt-4 flex-row items-center rounded-xl border px-3"><MaterialIcons name="directions-bus" size={20} color={colors.muted} /><TextInput value={query} onChangeText={setQuery} onSubmitEditing={handleSearch} placeholder="e.g. BUS-101 or KA-19-AB-1234" placeholderTextColor={colors.muted} className="h-12 flex-1 pl-2 text-sm text-foreground" /><Pressable onPress={handleSearch} style={{ backgroundColor: colors.primary }} className="rounded-lg px-3 py-2"><Text className="text-xs font-black text-white">TRACK</Text></Pressable></View></Card></View>
+      <View className="mb-5"><SectionTitle title="Quick access" /><View className="flex-row flex-wrap justify-between gap-y-3"><Quick title="Routes" icon="map" onPress={() => router.push("/(tabs)/routes")} /><Quick title="Timetable" icon="schedule" onPress={() => router.push("/timetable")} /><Quick title="Fare" icon="currency-rupee" onPress={() => router.push("/fare")} /><Quick title="Saved" icon="favorite" onPress={() => router.push("/saved")} /></View></View>
+      <View className="mb-5"><SectionTitle title="Live information" action="See all" onPress={() => router.push("/(tabs)/track")} /><BusMap buses={activeBuses.slice(0, 5)} selectedBusId={activeBuses[0]?.id} onSelectBus={(id) => router.push(`/bus/${id}`)} /><View className="mt-3 gap-2">{activeBuses.slice(0, 3).map((bus) => <Pressable key={bus.id} onPress={() => router.push(`/bus/${bus.id}`)} className="flex-row items-center rounded-2xl bg-surface px-3 py-3"><View style={{ backgroundColor: colors.primarySoft }} className="mr-3 h-9 w-9 items-center justify-center rounded-xl"><MaterialIcons name="directions-bus" size={19} color={colors.primary} /></View><View className="flex-1"><View className="flex-row items-center gap-2"><Text className="font-black text-foreground">{bus.id}</Text><StatusPill label={bus.status === "DELAYED" ? "DELAYED" : "LIVE"} tone={bus.status === "DELAYED" ? "warning" : "success"} /></View><Text className="mt-1 text-xs text-muted">{bus.currentStop} → {bus.nextStop}</Text></View><View className="items-end"><Text style={{ color: colors.primary }} className="text-lg font-black">{bus.eta}m</Text><Text className="text-[10px] text-muted">next stop</Text></View></Pressable>)}</View></View>
+    </ScrollView>
+  </ScreenContainer>;
 }
+
+function Quick({ title, icon, onPress }: { title: string; icon: keyof typeof MaterialIcons.glyphMap; onPress: () => void }) { const colors = useColors(); return <Pressable onPress={onPress} className="w-[23%] items-center"><View style={{ backgroundColor: colors.surfaceAlt }} className="mb-2 h-14 w-14 items-center justify-center rounded-2xl"><MaterialIcons name={icon} size={23} color={colors.primary} /></View><Text className="text-xs font-bold text-foreground">{title}</Text></Pressable>; }

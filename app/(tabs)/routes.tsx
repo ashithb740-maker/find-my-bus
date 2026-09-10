@@ -1,0 +1,13 @@
+import { MaterialIcons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import React from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScreenContainer } from "@/components/screen-container";
+import { Card, SectionTitle, StatusPill } from "@/components/transport-ui";
+import { useColors } from "@/hooks/use-colors";
+import { ROUTES, getBusesForRoute, hydrateBus } from "@/lib/transport-data";
+
+export default function RoutesScreen() {
+  const colors = useColors();
+  return <ScreenContainer className="px-5" edges={["top", "left", "right"]}><ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}><View className="pt-2"><Text className="text-3xl font-black text-foreground">Routes</Text><Text className="mt-1 text-sm text-muted">Explore routes across the Mangaluru demo network.</Text></View><Card className="mt-5"><View className="flex-row items-center gap-3"><View style={{ backgroundColor: colors.primarySoft }} className="h-11 w-11 items-center justify-center rounded-xl"><MaterialIcons name="route" size={22} color={colors.primary} /></View><View className="flex-1"><Text className="font-black text-foreground">Not sure where to start?</Text><Text className="mt-1 text-xs text-muted">Use Journey Planner to compare direct options.</Text></View><Pressable onPress={() => router.push("/plan")}><MaterialIcons name="arrow-forward" size={21} color={colors.primary} /></Pressable></View></Card><View className="mt-6"><SectionTitle title={`${ROUTES.length} available routes`} /><View className="gap-3">{ROUTES.map((route) => { const assigned = getBusesForRoute(route.id); const liveCount = assigned.filter((seed) => hydrateBus(seed).status !== "STOPPED").length; return <Pressable key={route.id} onPress={() => router.push(`/route/${route.id}`)}><Card><View className="flex-row items-start"><View style={{ backgroundColor: route.color }} className="mr-3 h-12 w-12 items-center justify-center rounded-2xl"><Text className="text-lg font-black text-white">{route.label}</Text></View><View className="flex-1"><Text className="text-base font-black text-foreground">{route.origin} <Text className="font-normal text-muted">→</Text> {route.destination}</Text><Text className="mt-1 text-xs text-muted">{route.stopIds.length} stops · {route.duration} min · from ₹{route.fare}</Text><View className="mt-3 flex-row items-center gap-2"><StatusPill label={`${liveCount} active`} tone="success" /><Text className="text-xs text-muted">{route.frequency}</Text></View></View><MaterialIcons name="chevron-right" size={22} color={colors.muted} /></View></Card></Pressable>; })}</View></View></ScrollView></ScreenContainer>;
+}

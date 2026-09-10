@@ -18,6 +18,10 @@ const MAPPING = {
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
+  "location.fill": "gps-fixed",
+  "map.fill": "map",
+  "mappin.and.ellipse": "location-on",
+  "person.fill": "person",
 } as IconMapping;
 
 /**
