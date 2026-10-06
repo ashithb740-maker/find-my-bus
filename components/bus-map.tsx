@@ -16,7 +16,7 @@ function project(latitude: number, longitude: number, width = WEB_WIDTH, height 
 
 function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void }) {
   const colors = useColors();
-  const route = selectedBusId ? getRoute(buses.find((bus) => bus.id === selectedBusId)?.routeId ?? "") : getRoute("101");
+  const route = selectedBusId ? getRoute(buses.find((bus) => bus.id === selectedBusId)?.routeId ?? "") : buses[0] ? getRoute(buses[0].routeId) : undefined;
   const routePoints = route?.stopIds.map((id) => project(getStop(id)!.latitude, getStop(id)!.longitude)) ?? [];
   return <View style={{ backgroundColor: colors.mapBase }} className="overflow-hidden rounded-[28px]">
     <View className="absolute left-4 top-4 z-10 rounded-full bg-white/90 px-3 py-1.5"><Text style={{ color: colors.primary }} className="text-[11px] font-extrabold tracking-widest">MANGALURU • DEMO MAP</Text></View>
@@ -29,6 +29,7 @@ function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selec
       {route?.stopIds.map((id) => { const stop = getStop(id)!; const point = project(stop.latitude, stop.longitude); return <React.Fragment key={id}><Circle cx={point.x} cy={point.y} r="5" fill="#FFFFFF" stroke={route.color} strokeWidth="3" /><SvgText x={point.x + 8} y={point.y - 8} fill={colors.foreground} fontSize="9" fontWeight="700">{stop.name}</SvgText></React.Fragment>; })}
       {buses.map((bus) => { const point = project(bus.latitude, bus.longitude); const selected = bus.id === selectedBusId; return <React.Fragment key={bus.id}><Circle cx={point.x} cy={point.y} r={selected ? 12 : 9} fill={selected ? colors.primary : colors.success} opacity="0.2" /><Circle cx={point.x} cy={point.y} r={selected ? 7 : 5} fill={selected ? colors.primary : colors.success} stroke="#FFFFFF" strokeWidth="2" /></React.Fragment>; })}
     </Svg>
+    {buses.length === 0 ? <View className="absolute inset-0 items-center justify-center"><View className="rounded-2xl bg-white/95 px-5 py-4"><Text style={{ color: colors.foreground }} className="text-center font-black">No live buses yet</Text><Text style={{ color: colors.muted }} className="mt-1 text-center text-xs">Admin needs to add a bus before tracking starts.</Text></View></View> : null}
     <View className="absolute bottom-3 left-3 right-3 flex-row items-center justify-between"><View className="rounded-full bg-white/90 px-3 py-2"><Text className="text-xs font-bold text-slate-800">◉ Your location · Demo</Text></View><View className="flex-row gap-2"><Pressable onPress={() => undefined} className="rounded-full bg-white p-2"><MaterialIcons name="my-location" size={18} color={colors.primary} /></Pressable><Pressable onPress={() => undefined} className="rounded-full bg-white p-2"><MaterialIcons name="add" size={18} color={colors.primary} /></Pressable></View></View>
     {onSelectBus ? <View className="absolute right-3 top-14 gap-1">{buses.slice(0, 4).map((bus) => <Pressable key={bus.id} onPress={() => onSelectBus(bus.id)} className="rounded-full bg-white/90 px-2 py-1"><Text className="text-[10px] font-bold text-slate-800">{bus.id}</Text></Pressable>)}</View> : null}
   </View>;
@@ -48,7 +49,7 @@ export function BusMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]
   const MapView = native.default;
   const Marker = native.Marker;
   const PolylineNative = native.Polyline;
-  const route = selectedBusId ? getRoute(buses.find((bus) => bus.id === selectedBusId)?.routeId ?? "") : getRoute("101");
+  const route = selectedBusId ? getRoute(buses.find((bus) => bus.id === selectedBusId)?.routeId ?? "") : buses[0] ? getRoute(buses[0].routeId) : undefined;
   const coordinates = route?.stopIds.map((id) => { const stop = getStop(id)!; return { latitude: stop.latitude, longitude: stop.longitude }; }) ?? [];
   return <View style={styles.nativeMap}><MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={{ ...DEMO_CENTER, latitudeDelta: 0.32, longitudeDelta: 0.32 }} showsUserLocation={false}><PolylineNative coordinates={coordinates} strokeColor={route?.color ?? colors.primary} strokeWidth={5} />{route?.stopIds.map((id) => { const stop = getStop(id)!; return <Marker key={id} coordinate={{ latitude: stop.latitude, longitude: stop.longitude }} title={stop.name} pinColor={route.color} />; })}{buses.map((bus) => <Marker key={bus.id} coordinate={{ latitude: bus.latitude, longitude: bus.longitude }} title={bus.id} description={`${bus.currentStop} → ${bus.nextStop}`} pinColor={bus.id === selectedBusId ? colors.primary : colors.success} onPress={() => onSelectBus?.(bus.id)} />)}</MapView><View className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5"><Text style={{ color: colors.primary }} className="text-[11px] font-extrabold tracking-widest">LIVE MAP • DEMO GPS</Text></View></View>;
 }

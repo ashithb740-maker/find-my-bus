@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { advanceBus, BUS_SEEDS, hydrateBus, type LiveBus, type BusSeed } from "./transport-data";
+import { advanceBus, hydrateBus, type LiveBus, type BusSeed } from "./transport-data";
 
 type Alert = { id: string; busId: string; stopName: string; threshold: number; enabled: boolean };
 type AppStateValue = {
@@ -24,18 +24,19 @@ const AppStateContext = createContext<AppStateValue | null>(null);
 const STORAGE_KEY = "find-my-bus-local-state";
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [buses, setBuses] = useState<LiveBus[]>(() => BUS_SEEDS.map((bus) => hydrateBus(bus)));
-  const [savedBuses, setSavedBuses] = useState<string[]>(["BUS-101"]);
-  const [savedRoutes, setSavedRoutes] = useState<string[]>(["102"]);
-  const [savedStops, setSavedStops] = useState<string[]>(["kottara"]);
+  const [buses, setBuses] = useState<LiveBus[]>([]);
+  const [savedBuses, setSavedBuses] = useState<string[]>([]);
+  const [savedRoutes, setSavedRoutes] = useState<string[]>([]);
+  const [savedStops, setSavedStops] = useState<string[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isOffline, setOffline] = useState(false);
   const [demoLocation, setDemoLocation] = useState(true);
   const [customBuses, setCustomBuses] = useState<BusSeed[]>([]);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
-      if (!stored) return;
+      if (!stored) { setHydrated(true); return; }
       try {
         const parsed = JSON.parse(stored);
         setSavedBuses(parsed.savedBuses ?? []);
@@ -45,10 +46,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setOffline(Boolean(parsed.isOffline));
         setDemoLocation(parsed.demoLocation !== false);
         setCustomBuses(parsed.customBuses ?? []);
-        setBuses([...BUS_SEEDS, ...(parsed.customBuses ?? [])].map((bus) => hydrateBus(bus)));
+        setBuses((parsed.customBuses ?? []).map((bus: BusSeed) => hydrateBus(bus)));
       } catch {
         // Keep safe in-memory defaults if local storage is unavailable.
-      }
+      } finally { setHydrated(true); }
     });
   }, []);
 
@@ -60,8 +61,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }, [isOffline]);
 
   useEffect(() => {
+    if (!hydrated) return;
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ savedBuses, savedRoutes, savedStops, alerts, isOffline, demoLocation, customBuses })).catch(() => undefined);
-  }, [savedBuses, savedRoutes, savedStops, alerts, isOffline, demoLocation, customBuses]);
+  }, [savedBuses, savedRoutes, savedStops, alerts, isOffline, demoLocation, customBuses, hydrated]);
 
   const value = useMemo<AppStateValue>(() => ({
     buses,

@@ -1,13 +1,12 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { BusMap } from "@/components/bus-map";
 import { Card, PrimaryButton, StatusPill } from "@/components/transport-ui";
 import { useColors } from "@/hooks/use-colors";
 import { useAppState } from "@/lib/app-state";
-import { searchTransport } from "@/lib/transport-data";
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -16,10 +15,10 @@ export default function HomeScreen() {
   const [from, setFrom] = useState("Kottara");
   const [to, setTo] = useState("Surathkal");
   const activeBuses = buses.filter((bus) => bus.status !== "STOPPED");
-  const searchHint = useMemo(() => searchTransport(statusQuery), [statusQuery]);
   const handleStatusSearch = () => {
     if (!statusQuery.trim()) return;
-    const match = searchHint.buses[0];
+    const normalized = statusQuery.trim().toLowerCase();
+    const match = buses.find((bus) => `${bus.id} ${bus.vehicle} ${bus.routeId} ${bus.currentStop} ${bus.nextStop}`.toLowerCase().includes(normalized));
     if (match) router.push(`/bus/${match.id}`);
     else router.push(`/search?q=${encodeURIComponent(statusQuery)}`);
   };
