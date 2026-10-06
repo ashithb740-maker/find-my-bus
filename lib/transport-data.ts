@@ -120,6 +120,30 @@ export function advanceBus(bus: LiveBus, seconds = 4): LiveBus {
   return hydrateBus(nextSeed, Date.now());
 }
 
+export function progressFromCoordinates(routeId: string, latitude: number, longitude: number) {
+  const route = getRoute(routeId);
+  const stops = route?.stopIds.map((id) => getStop(id)).filter(Boolean) as Stop[] | undefined;
+  if (!stops || stops.length < 2) return 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  let bestProgress = 0;
+  for (let index = 0; index < stops.length - 1; index += 1) {
+    const start = stops[index];
+    const end = stops[index + 1];
+    const dx = end.longitude - start.longitude;
+    const dy = end.latitude - start.latitude;
+    const lengthSquared = dx * dx + dy * dy || 1;
+    const projection = Math.max(0, Math.min(1, ((longitude - start.longitude) * dx + (latitude - start.latitude) * dy) / lengthSquared));
+    const projectedLongitude = start.longitude + dx * projection;
+    const projectedLatitude = start.latitude + dy * projection;
+    const distance = (longitude - projectedLongitude) ** 2 + (latitude - projectedLatitude) ** 2;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestProgress = (index + projection) / (stops.length - 1);
+    }
+  }
+  return Math.max(0, Math.min(0.999, bestProgress));
+}
+
 export function searchTransport(query: string) {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return { buses: [], routes: [], stops: [] };

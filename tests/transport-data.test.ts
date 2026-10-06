@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BUS_SEEDS, hydrateBus, planJourney, searchTransport, advanceBus, getRoute } from "../lib/transport-data";
+import { BUS_SEEDS, hydrateBus, planJourney, searchTransport, advanceBus, getRoute, progressFromCoordinates, getStop } from "../lib/transport-data";
 
 describe("Find My Bus transport data", () => {
   it("hydrates a bus on its configured route with a next stop and ETA", () => {
@@ -45,5 +45,12 @@ describe("Find My Bus transport data", () => {
   it("keeps route stop references valid", () => {
     const route = getRoute("102");
     expect(route?.stopIds.length).toBeGreaterThan(3);
+  });
+
+  it("projects driver GPS coordinates onto the configured route", () => {
+    const kottara = getStop("kottara");
+    expect(kottara).toBeTruthy();
+    const progress = progressFromCoordinates("101", kottara!.latitude, kottara!.longitude);
+    expect(progress).toBeCloseTo(0.2, 1);
   });
 });

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { advanceBus, hydrateBus, type LiveBus, type BusSeed } from "./transport-data";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { advanceBus, hydrateBus, progressFromCoordinates, type LiveBus, type BusSeed } from "./transport-data";
 
 type Alert = { id: string; busId: string; stopName: string; threshold: number; enabled: boolean };
 type AppStateValue = {
@@ -18,6 +18,7 @@ type AppStateValue = {
   setDemoLocation: (value: boolean) => void;
   addBus: (bus: { id: string; routeId: string; vehicle: string }) => void;
   removeBus: (id: string) => void;
+  updateBusTelemetry: (id: string, payload: { latitude: number; longitude: number; speed: number; heading: number }) => void;
 };
 
 const AppStateContext = createContext<AppStateValue | null>(null);
@@ -65,6 +66,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ savedBuses, savedRoutes, savedStops, alerts, isOffline, demoLocation, customBuses })).catch(() => undefined);
   }, [savedBuses, savedRoutes, savedStops, alerts, isOffline, demoLocation, customBuses, hydrated]);
 
+  const updateBusTelemetry = useCallback((id: string, payload: { latitude: number; longitude: number; speed: number; heading: number }) => {
+    setBuses((current) => current.map((bus) => {
+      if (bus.id !== id) return bus;
+      const progress = progressFromCoordinates(bus.routeId, payload.latitude, payload.longitude);
+      const routeState = hydrateBus({ ...bus, ...payload, progress }, Date.now());
+      return { ...routeState, ...payload, progress, lastUpdated: Date.now() };
+    }));
+  }, []);
+
   const value = useMemo<AppStateValue>(() => ({
     buses,
     savedBuses,
@@ -90,7 +100,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setCustomBuses((current) => current.filter((bus) => bus.id !== id));
       setBuses((current) => current.filter((bus) => bus.id !== id));
     },
-  }), [alerts, buses, customBuses, demoLocation, isOffline, savedBuses, savedRoutes, savedStops]);
+    updateBusTelemetry,
+  }), [alerts, buses, customBuses, demoLocation, isOffline, savedBuses, savedRoutes, savedStops, updateBusTelemetry]);
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

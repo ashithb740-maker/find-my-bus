@@ -46,6 +46,12 @@ export function EmptyState({ icon = "search-off", title, message }: { icon?: key
   return <View className="items-center rounded-[24px] border border-dashed border-border bg-surface p-8"><MaterialIcons name={icon} size={34} color={colors.muted} /><Text className="mt-3 text-base font-bold text-foreground">{title}</Text><Text className="mt-1 text-center text-sm leading-5 text-muted">{message}</Text></View>;
 }
 
+export function RouteTimeline({ stops, currentStop, nextStop }: { stops: { id: string; name: string }[]; currentStop: string; nextStop: string }) {
+  const colors = useColors();
+  const currentIndex = Math.max(0, stops.findIndex((stop) => stop.name === currentStop));
+  return <View className="rounded-2xl bg-surfaceAlt px-4 py-4"><View className="mb-3 flex-row items-center justify-between"><Text className="font-black text-foreground">Journey progress</Text><Text style={{ color: colors.primary }} className="text-xs font-black">{currentStop} → {nextStop}</Text></View><View className="gap-0">{stops.map((stop, index) => { const passed = index <= currentIndex; const isCurrent = stop.name === currentStop; const isNext = stop.name === nextStop; return <View key={stop.id} className="min-h-[34px] flex-row items-center"><View className="mr-3 w-4 items-center self-stretch">{index > 0 ? <View style={{ backgroundColor: passed ? colors.primary : colors.border }} className="absolute top-0 h-1/2 w-0.5" /> : null}{index < stops.length - 1 ? <View style={{ backgroundColor: index < currentIndex ? colors.primary : colors.border }} className="absolute bottom-0 h-1/2 w-0.5" /> : null}<View style={{ backgroundColor: isCurrent ? colors.primary : passed ? colors.primarySoft : colors.background, borderColor: passed ? colors.primary : colors.border }} className="z-10 h-3.5 w-3.5 rounded-full border-2" /></View><Text style={{ color: isCurrent ? colors.primary : isNext ? colors.foreground : colors.muted }} className={`flex-1 text-xs ${isCurrent || isNext ? "font-black" : "font-semibold"}`}>{stop.name}</Text>{isCurrent ? <Text style={{ color: colors.primary }} className="text-[10px] font-black">NOW</Text> : isNext ? <Text style={{ color: colors.warning }} className="text-[10px] font-black">NEXT</Text> : null}</View>; })}</View></View>;
+}
+
 const styles = StyleSheet.create({
   primaryButton: {
     minHeight: 48,
