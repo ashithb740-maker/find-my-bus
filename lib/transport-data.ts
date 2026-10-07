@@ -67,9 +67,16 @@ export const STOPS: Stop[] = [
   { id: "mangaluru-junction", name: "Mangaluru Junction", area: "Kulashekar", latitude: 12.8705, longitude: 74.8864, facilities: ["Shelter", "Information"] },
   { id: "airport", name: "Mangaluru Airport", area: "Bajpe", latitude: 12.9618, longitude: 74.8901, facilities: ["Shelter", "Information", "Parking"] },
   { id: "urva-store", name: "Urva Store", area: "Mangaluru", latitude: 12.902, longitude: 74.842, facilities: ["Shelter"] },
+  { id: "subrahmanya", name: "Subrahmanya", area: "Kadaba", latitude: 12.6638, longitude: 75.6154, facilities: ["Shelter", "Information"] },
+  { id: "nettana", name: "Nettana", area: "Kadaba", latitude: 12.7262, longitude: 75.5538, facilities: ["Shelter"] },
+  { id: "mardala", name: "Mardala", area: "Dakshina Kannada", latitude: 12.7428, longitude: 75.5080, facilities: ["Shelter", "Information"] },
+  { id: "kadaba", name: "Kadaba", area: "Dakshina Kannada", latitude: 12.7430, longitude: 75.4709, facilities: ["Shelter", "Retail", "Information"] },
+  { id: "alankaru", name: "Alankaru", area: "Dakshina Kannada", latitude: 12.7774, longitude: 75.3519, facilities: ["Shelter"] },
+  { id: "uppinangady", name: "Uppinangady", area: "Dakshina Kannada", latitude: 12.8350, longitude: 75.2592, facilities: ["Shelter", "Information"] },
 ];
 
 export const ROUTES: Route[] = [
+  { id: "201", label: "Subrahmanya–Uppinangady", origin: "Subrahmanya", destination: "Uppinangady", stopIds: ["subrahmanya", "nettana", "mardala", "kadaba", "alankaru", "uppinangady"], duration: 75, fare: 50, frequency: "As scheduled", firstBus: "05:30", lastBus: "21:30", color: "#0E7490" },
   { id: "101", label: "101", origin: "Mangaluru", destination: "Udupi", stopIds: ["statebank", "kottara", "kuloor", "surathkal", "mulki", "udupi"], duration: 80, fare: 55, frequency: "Every 15–20 min", firstBus: "05:30", lastBus: "21:45", color: "#0E7490" },
   { id: "102", label: "102", origin: "Mangaluru", destination: "Surathkal", stopIds: ["hampankatta", "statebank", "lalbagh", "bejai", "kottara", "kuloor", "surathkal"], duration: 42, fare: 35, frequency: "Every 12–15 min", firstBus: "05:45", lastBus: "22:15", color: "#F97316" },
   { id: "103", label: "103", origin: "Mangaluru", destination: "BC Road", stopIds: ["hampankatta", "kankanady", "pumpwell", "bantwal", "bc-road"], duration: 48, fare: 30, frequency: "Every 20 min", firstBus: "06:00", lastBus: "21:00", color: "#7C3AED" },
