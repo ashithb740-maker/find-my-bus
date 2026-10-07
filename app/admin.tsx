@@ -13,7 +13,7 @@ export default function AdminScreen() {
   const { buses, addBus, removeBus } = useAppState();
   const [busNumber, setBusNumber] = useState("");
   const [routeName, setRouteName] = useState("");
-  const [routeId] = useState("101");
+  const routeId = "201";
   const [departureTime, setDepartureTime] = useState("");
   const [lastTripTime, setLastTripTime] = useState("");
   const [message, setMessage] = useState("");
