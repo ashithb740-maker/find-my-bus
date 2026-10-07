@@ -16,7 +16,7 @@ type AppStateValue = {
   removeAlert: (id: string) => void;
   setOffline: (value: boolean) => void;
   setDemoLocation: (value: boolean) => void;
-  addBus: (bus: { id: string; routeId: string; vehicle: string }) => void;
+  addBus: (bus: { id: string; routeId: string; vehicle: string; departureTime: string; lastTripTime: string }) => void;
   removeBus: (id: string) => void;
   updateBusTelemetry: (id: string, payload: { latitude: number; longitude: number; speed: number; heading: number }) => void;
 };
@@ -91,8 +91,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     removeAlert: (id) => setAlerts((current) => current.filter((item) => item.id !== id)),
     setOffline,
     setDemoLocation,
-    addBus: ({ id, routeId, vehicle }) => {
-      const seed = { id, routeId, vehicle, progress: 0.08, status: "ON TIME" as const };
+    addBus: ({ id, routeId, vehicle, departureTime, lastTripTime }) => {
+      const seed = { id, routeId, vehicle, departureTime, lastTripTime, progress: 0.08, status: "ON TIME" as const };
       setCustomBuses((current) => [...current, seed]);
       setBuses((current) => [...current, hydrateBus(seed)]);
     },
