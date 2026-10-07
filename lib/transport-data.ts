@@ -25,6 +25,7 @@ export type BusSeed = {
   id: string;
   routeId: string;
   vehicle: string;
+  routeName?: string;
   departureTime: string;
   lastTripTime: string;
   progress: number;
@@ -77,11 +78,11 @@ export const ROUTES: Route[] = [
 ];
 
 export const BUS_SEEDS: BusSeed[] = [
-  { id: "BUS-101", routeId: "101", vehicle: "KA-19-AB-1234", departureTime: "05:30", lastTripTime: "21:45", progress: 0.23, status: "ON TIME" },
-  { id: "BUS-102", routeId: "102", vehicle: "KA-19-AC-2088", departureTime: "05:45", lastTripTime: "22:15", progress: 0.57, status: "ON TIME" },
-  { id: "BUS-103", routeId: "103", vehicle: "KA-19-AD-7741", departureTime: "06:00", lastTripTime: "21:00", progress: 0.41, status: "DELAYED" },
-  { id: "BUS-104", routeId: "104", vehicle: "KA-19-AE-0412", departureTime: "06:15", lastTripTime: "22:30", progress: 0.76, status: "ON TIME" },
-  { id: "BUS-105", routeId: "105", vehicle: "KA-19-AF-9005", departureTime: "06:30", lastTripTime: "20:45", progress: 0.34, status: "ON TIME" },
+  { id: "BUS-101", routeId: "101", vehicle: "KA-19-AB-1234", routeName: "Mangaluru, Kottara, Kuloor, Surathkal, Mulki, Udupi", departureTime: "05:30", lastTripTime: "21:45", progress: 0.23, status: "ON TIME" },
+  { id: "BUS-102", routeId: "102", vehicle: "KA-19-AC-2088", routeName: "Mangaluru, Hampankatta, Lalbagh, Bejai, Kottara, Kuloor, Surathkal", departureTime: "05:45", lastTripTime: "22:15", progress: 0.57, status: "ON TIME" },
+  { id: "BUS-103", routeId: "103", vehicle: "KA-19-AD-7741", routeName: "Mangaluru, Kankanady, Pumpwell, Bantwal, BC Road", departureTime: "06:00", lastTripTime: "21:00", progress: 0.41, status: "DELAYED" },
+  { id: "BUS-104", routeId: "104", vehicle: "KA-19-AE-0412", routeName: "Mangaluru, Hampankatta, Bendoorwell, Kankanady", departureTime: "06:15", lastTripTime: "22:30", progress: 0.76, status: "ON TIME" },
+  { id: "BUS-105", routeId: "105", vehicle: "KA-19-AF-9005", routeName: "Mangaluru, Kadri, Bejai, Kavoor, Kuloor, Panambur", departureTime: "06:30", lastTripTime: "20:45", progress: 0.34, status: "ON TIME" },
   { id: "BUS-106", routeId: "102", vehicle: "KA-19-AG-3177", departureTime: "05:45", lastTripTime: "22:15", progress: 0.12, status: "STOPPED" },
   { id: "BUS-107", routeId: "101", vehicle: "KA-19-AH-6120", departureTime: "05:30", lastTripTime: "21:45", progress: 0.68, status: "ON TIME" },
   { id: "BUS-108", routeId: "103", vehicle: "KA-19-AJ-5522", departureTime: "06:00", lastTripTime: "21:00", progress: 0.84, status: "ON TIME" },
