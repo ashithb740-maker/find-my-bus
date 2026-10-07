@@ -1,113 +1,22 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { advanceBus, hydrateBus, progressFromCoordinates, type LiveBus, type BusSeed } from "./transport-data";
-
-type Alert = { id: string; busId: string; stopName: string; threshold: number; enabled: boolean };
-type AppStateValue = {
-  buses: LiveBus[];
-  savedBuses: string[];
-  savedRoutes: string[];
-  savedStops: string[];
-  alerts: Alert[];
-  isOffline: boolean;
-  demoLocation: boolean;
-  toggleSaved: (kind: "bus" | "route" | "stop", id: string) => void;
-  addAlert: (busId: string, stopName: string) => void;
-  removeAlert: (id: string) => void;
-  setOffline: (value: boolean) => void;
-  setDemoLocation: (value: boolean) => void;
-  addBus: (bus: { id: string; routeId: string; vehicle: string; routeName: string; departureTime: string; lastTripTime: string }) => void;
-  removeBus: (id: string) => void;
-  updateBusTelemetry: (id: string, payload: { latitude: number; longitude: number; speed: number; heading: number }) => void;
-};
-
-const AppStateContext = createContext<AppStateValue | null>(null);
-const STORAGE_KEY = "find-my-bus-local-state";
-
-export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [buses, setBuses] = useState<LiveBus[]>([]);
-  const [savedBuses, setSavedBuses] = useState<string[]>([]);
-  const [savedRoutes, setSavedRoutes] = useState<string[]>([]);
-  const [savedStops, setSavedStops] = useState<string[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [isOffline, setOffline] = useState(false);
-  const [demoLocation, setDemoLocation] = useState(true);
-  const [customBuses, setCustomBuses] = useState<BusSeed[]>([]);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((stored) => {
-      if (!stored) { setHydrated(true); return; }
-      try {
-        const parsed = JSON.parse(stored);
-        setSavedBuses(parsed.savedBuses ?? []);
-        setSavedRoutes(parsed.savedRoutes ?? []);
-        setSavedStops(parsed.savedStops ?? []);
-        setAlerts(parsed.alerts ?? []);
-        setOffline(Boolean(parsed.isOffline));
-        setDemoLocation(parsed.demoLocation !== false);
-        setCustomBuses(parsed.customBuses ?? []);
-        setBuses((parsed.customBuses ?? []).map((bus: BusSeed) => hydrateBus(bus)));
-      } catch {
-        // Keep safe in-memory defaults if local storage is unavailable.
-      } finally { setHydrated(true); }
-    });
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (!isOffline) setBuses((current) => current.map((bus) => advanceBus(bus)));
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [isOffline]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ savedBuses, savedRoutes, savedStops, alerts, isOffline, demoLocation, customBuses })).catch(() => undefined);
-  }, [savedBuses, savedRoutes, savedStops, alerts, isOffline, demoLocation, customBuses, hydrated]);
-
-  const updateBusTelemetry = useCallback((id: string, payload: { latitude: number; longitude: number; speed: number; heading: number }) => {
-    setBuses((current) => current.map((bus) => {
-      if (bus.id !== id) return bus;
-      const progress = progressFromCoordinates(bus.routeId, payload.latitude, payload.longitude);
-      const routeState = hydrateBus({ ...bus, ...payload, progress }, Date.now());
-      return { ...routeState, ...payload, progress, lastUpdated: Date.now() };
-    }));
-  }, []);
-
-  const value = useMemo<AppStateValue>(() => ({
-    buses,
-    savedBuses,
-    savedRoutes,
-    savedStops,
-    alerts,
-    isOffline,
-    demoLocation,
-    toggleSaved: (kind, id) => {
-      const setter = kind === "bus" ? setSavedBuses : kind === "route" ? setSavedRoutes : setSavedStops;
-      setter((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
-    },
-    addAlert: (busId, stopName) => setAlerts((current) => current.some((item) => item.busId === busId && item.stopName === stopName) ? current : [...current, { id: `${busId}-${stopName}`, busId, stopName, threshold: 5, enabled: true }]),
-    removeAlert: (id) => setAlerts((current) => current.filter((item) => item.id !== id)),
-    setOffline,
-    setDemoLocation,
-    addBus: ({ id, routeId, vehicle, routeName, departureTime, lastTripTime }) => {
-      const seed = { id, routeId, vehicle, routeName, departureTime, lastTripTime, progress: 0.08, status: "ON TIME" as const };
-      setCustomBuses((current) => [...current, seed]);
-      setBuses((current) => [...current, hydrateBus(seed)]);
-    },
-    removeBus: (id) => {
-      setCustomBuses((current) => current.filter((bus) => bus.id !== id));
-      setBuses((current) => current.filter((bus) => bus.id !== id));
-    },
-    updateBusTelemetry,
-  }), [alerts, buses, customBuses, demoLocation, isOffline, savedBuses, savedRoutes, savedStops, updateBusTelemetry]);
-
-  return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+import React,{createContext,useCallback,useContext,useEffect,useMemo,useState} from "react";
+import {advanceBus,hydrateBus,progressFromCoordinates,routeStopIds,type LiveBus,type BusSeed,type Route,type Trip} from "./transport-data";
+type Alert={id:string;busId:string;stopName:string;threshold:number;enabled:boolean};
+type AppStateValue={buses:LiveBus[];routes:Route[];trips:Trip[];savedBuses:string[];savedRoutes:string[];savedStops:string[];alerts:Alert[];isOffline:boolean;demoLocation:boolean;toggleSaved:(kind:"bus"|"route"|"stop",id:string)=>void;addAlert:(busId:string,stopName:string)=>void;removeAlert:(id:string)=>void;setOffline:(v:boolean)=>void;setDemoLocation:(v:boolean)=>void;addRoute:(x:{id:string;label:string;origin:string;destination:string;stopNames:string[]})=>void;addTrip:(x:{routeId:string;busId:string;direction:"FORWARD"|"REVERSE";departureTime:string;arrivalTime:string;breakMinutes?:number})=>void;removeBus:(id:string)=>void;updateBusTelemetry:(id:string,p:{latitude:number;longitude:number;speed:number;heading:number})=>void};
+const C=createContext<AppStateValue|null>(null);const KEY="find-my-bus-local-state-v2";
+export function AppStateProvider({children}:{children:React.ReactNode}){
+ const [buses,setBuses]=useState<LiveBus[]>([]),[routes,setRoutes]=useState<Route[]>([]),[trips,setTrips]=useState<Trip[]>([]),[savedBuses,setSavedBuses]=useState<string[]>([]),[savedRoutes,setSavedRoutes]=useState<string[]>([]),[savedStops,setSavedStops]=useState<string[]>([]),[alerts,setAlerts]=useState<Alert[]>([]),[isOffline,setOffline]=useState(false),[demoLocation,setDemoLocation]=useState(true),[hydrated,setHydrated]=useState(false);
+ useEffect(()=>{AsyncStorage.getItem(KEY).then(s=>{if(!s){setHydrated(true);return;}try{const p=JSON.parse(s);setSavedBuses(p.savedBuses??[]);setSavedRoutes(p.savedRoutes??[]);setSavedStops(p.savedStops??[]);setAlerts(p.alerts??[]);setOffline(!!p.isOffline);setDemoLocation(p.demoLocation!==false);setRoutes(p.routes??[]);setTrips(p.trips??[]);setBuses((p.buses??[]).map((b:BusSeed)=>hydrateBus(b)));}finally{setHydrated(true);}})},[]);
+ useEffect(()=>{const t=setInterval(()=>{if(!isOffline)setBuses(c=>c.map(advanceBus)),4000);return()=>clearInterval(t)},[isOffline]);
+ useEffect(()=>{if(!hydrated)return;AsyncStorage.setItem(KEY,JSON.stringify({savedBuses,savedRoutes,savedStops,alerts,isOffline,demoLocation,routes,trips,buses:buses.map(({latitude,longitude,currentStop,nextStop,eta,speed,heading,lastUpdated,...seed})=>seed)})).catch(()=>{});},[savedBuses,savedRoutes,savedStops,alerts,isOffline,demoLocation,routes,trips,buses,hydrated]);
+ const updateBusTelemetry=useCallback((id:string,p:{latitude:number;longitude:number;speed:number;heading:number})=>setBuses(c=>c.map(b=>b.id===id?{...b,...p,progress:progressFromCoordinates(b.stopNames,p.latitude,p.longitude),lastUpdated:Date.now()}:b)),[]);
+ const value=useMemo<AppStateValue>(()=>({buses,routes,trips,savedBuses,savedRoutes,savedStops,alerts,isOffline,demoLocation,
+ toggleSaved:(k,id)=>{const s=k==="bus"?setSavedBuses:k==="route"?setSavedRoutes:setSavedStops;s(c=>c.includes(id)?c.filter(x=>x!==id):[...c,id]);},
+ addAlert:(busId,stopName)=>setAlerts(c=>c.some(x=>x.busId===busId&&x.stopName===stopName)?c:[...c,{id:`${busId}-${stopName}`,busId,stopName,threshold:5,enabled:true}]),
+ removeAlert:id=>setAlerts(c=>c.filter(x=>x.id!==id)),setOffline,setDemoLocation,
+ addRoute:x=>{const stops=[x.origin.trim(),...x.stopNames.map(s=>s.trim()).filter(Boolean),x.destination.trim()];const r:Route={id:x.id.trim(),label:x.label.trim(),origin:stops[0],destination:stops.at(-1)!,stopNames:stops,stopIds:routeStopIds(stops),duration:Math.max(5,(stops.length-1)*10),fare:Math.max(5,(stops.length-1)*5),frequency:"Scheduled trips",firstBus:"",lastBus:"",color:"#0E7490"};setRoutes(c=>[...c,r]);},
+ addTrip:x=>{const r=routes.find(a=>a.id===x.routeId);if(!r)return;const id=`${r.id}-${x.direction}-${Date.now()}`,from=x.direction==="FORWARD"?r.origin:r.destination,to=x.direction==="FORWARD"?r.destination:r.origin,t:Trip={id,routeId:r.id,busId:x.busId.trim().toUpperCase(),direction:x.direction,fromStop:from,toStop:to,departureTime:x.departureTime.trim(),arrivalTime:x.arrivalTime.trim(),breakMinutes:x.breakMinutes};setTrips(c=>[...c,t]);setBuses(c=>c.some(b=>b.id===t.busId)?c:[...c,hydrateBus({id:t.busId,routeId:r.id,vehicle:t.busId,routeName:r.label,stopNames:r.stopNames,direction:t.direction,tripId:t.id,departureTime:t.departureTime,lastTripTime:t.arrivalTime,progress:.05,status:"ON TIME"})]);},
+ removeBus:id=>{setBuses(c=>c.filter(b=>b.id!==id));setTrips(c=>c.filter(t=>t.busId!==id));},updateBusTelemetry}),[buses,routes,trips,savedBuses,savedRoutes,savedStops,alerts,isOffline,demoLocation,updateBusTelemetry]);
+ return <C.Provider value={value}>{children}</C.Provider>;
 }
-
-export function useAppState() {
-  const value = useContext(AppStateContext);
-  if (!value) throw new Error("useAppState must be used inside AppStateProvider");
-  return value;
-}
+export function useAppState(){const v=useContext(C);if(!v)throw new Error("useAppState must be used inside AppStateProvider");return v;}
