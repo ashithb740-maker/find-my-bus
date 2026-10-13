@@ -37,7 +37,7 @@ function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selec
  const map=L.map('map',{zoomControl:true}).setView(center,11);
  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
  const tag=L.control({position:'topleft'});
- tag.onAdd=function(){const d=L.DomUtil.create('div','map-tag');d.textContent='FIND MY BUS · LIVE MAP';return d};tag.addTo(map);
+ tag.onAdd=function(){const d=L.DomUtil.create('div','map-tag');d.textContent='FIND MY BUS · OPENSTREETMAP';return d};tag.addTo(map);
  const locate=L.control({position:'topright'});
  locate.onAdd=function(){const b=L.DomUtil.create('button','map-tag');b.type='button';b.textContent='◎ My location';b.onclick=function(){map.locate({setView:true,maxZoom:15,enableHighAccuracy:true})};return b};locate.addTo(map);
  map.on('locationerror',function(){});
@@ -60,7 +60,7 @@ function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selec
   return <View style={{ height: MAP_HEIGHT, backgroundColor: "#eaf0ed", borderRadius: 24, overflow: "hidden" }}>
     {React.createElement("iframe" as any, { ref: frameRef, title: "Find My Bus live OpenStreetMap", srcDoc: mapHtml, style: { width: "100%", height: MAP_HEIGHT, border: 0, display: "block" }, sandbox: "allow-scripts allow-same-origin allow-popups" })}
     <View pointerEvents="none" className="absolute bottom-2 left-2 rounded-full bg-white/95 px-3 py-1.5">
-      <Text style={{ color: colors.primary }} className="text-[10px] font-bold">{buses.length ? `${buses.length} bus marker${buses.length === 1 ? "" : "s"} · select a marker for details` : "Map loaded · waiting for live bus GPS"}</Text>
+      <Text style={{ color: colors.primary }} className="text-[10px] font-bold">{buses.length ? `${buses.length} bus marker${buses.length === 1 ? "" : "s"} · select a marker for details` : "OpenStreetMap · waiting for driver GPS"}</Text>
     </View>
   </View>;
 }
