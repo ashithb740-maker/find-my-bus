@@ -96,7 +96,7 @@ function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selec
     </View>
     <View className="absolute bottom-2 left-3 right-3 flex-row items-center justify-between">
       <View className="rounded-full bg-white/95 px-3 py-1.5"><Text className="text-[10px] font-bold text-slate-800">{buses.length ? `${buses.length} bus marker${buses.length === 1 ? "" : "s"} · GPS updates` : "Stops around Mangaluru · waiting for bus GPS"}</Text></View>
-      <Text className="rounded bg-white/90 px-1.5 py-1 text-[9px] text-slate-700">© OpenStreetMap</Text>
+      <Text className="rounded bg-white/90 px-1.5 py-1 text-[9px] text-slate-700">© OpenStreetMap contributors</Text>
     </View>
     {onSelectBus && buses.length > 1 ? <View className="absolute bottom-12 right-3 gap-1">{buses.slice(0, 4).map((bus) => <Pressable key={bus.id} onPress={() => onSelectBus(bus.id)} className="rounded-full bg-white/95 px-2 py-1"><Text className="text-[10px] font-bold text-slate-800">{bus.vehicle || bus.id}</Text></Pressable>)}</View> : null}
   </View>;
