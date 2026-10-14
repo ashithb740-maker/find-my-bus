@@ -76,12 +76,28 @@ export function progressFromCoordinates(stopNames:string[]|undefined,latitude:nu
     const d=(longitude-x)**2+(latitude-y)**2;if(d<best){best=d;bestProgress=(i+p)/(stops.length-1);}
   }return Math.max(0,Math.min(0.999,bestProgress));
 }
+function normalizeStopName(value:string){
+  const name=value.trim().toLocaleLowerCase().normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").replace(/[.,()]/g," ").replace(/\\s+/g," ").trim();
+  const aliases:Record<string,string>={"subramanya":"subrahmanya","subrahmanya":"subrahmanya","subramanya temple":"subrahmanya","uppinangadi":"uppinangady","uppinangady":"uppinangady"};
+  return aliases[name]??name;
+}
 export function planJourney(routes:Route[],trips:Trip[],from:string,to:string){
-  const a=from.trim().toLowerCase(),b=to.trim().toLowerCase();if(!a||!b||a===b)return [];
+  const a=normalizeStopName(from),b=normalizeStopName(to);if(!a||!b||a===b)return [];
   const matches:Array<{route:Route;trip:Trip;stopCount:number;journeyMinutes:number;fare:number}>= [];
-  for(const route of routes){const names=route.stopNames.map(x=>x.toLowerCase());const fi=names.indexOf(a),ti=names.indexOf(b);if(fi<0||ti<0||fi===ti)continue;
-    const direction=fi<ti?"FORWARD":"REVERSE";const start=Math.min(fi,ti),end=Math.max(fi,ti);const count=end-start;
-    const journeyMinutes=Math.max(5,Math.round((route.duration/Math.max(route.stopNames.length-1,1))*count));const fare=Math.max(5,Math.round((route.fare/Math.max(route.stopNames.length-1,1))*count));
-    trips.filter(t=>t.routeId===route.id&&t.direction===direction).forEach(trip=>matches.push({route,trip,stopCount:count,journeyMinutes,fare}));
-  }return matches.sort((x,y)=>x.trip.departureTime.localeCompare(y.trip.departureTime));
+  for(const route of routes){
+    const names=route.stopNames.map(normalizeStopName),fi=names.indexOf(a),ti=names.indexOf(b);
+    if(fi<0||ti<0||fi===ti)continue;
+    const direction=fi<ti?"FORWARD":"REVERSE",start=Math.min(fi,ti),end=Math.max(fi,ti),count=end-start;
+    const journeyMinutes=Math.max(5,Math.round((route.duration/Math.max(route.stopNames.length-1,1))*count));
+    const fare=Math.max(5,Math.round((route.fare/Math.max(route.stopNames.length-1,1))*count));
+    // A scheduled trip must cover the requested segment, not merely share the route ID.
+    trips.filter(trip=>{
+      if(trip.routeId!==route.id||trip.direction!==direction)return false;
+      const tripFrom=names.indexOf(normalizeStopName(trip.fromStop)),tripTo=names.indexOf(normalizeStopName(trip.toStop));
+      if(tripFrom<0||tripTo<0)return true;
+      const low=Math.min(tripFrom,tripTo),high=Math.max(tripFrom,tripTo);
+      return start>=low&&end<=high;
+    }).forEach(trip=>matches.push({route,trip,stopCount:count,journeyMinutes,fare}));
+  }
+  return matches.sort((x,y)=>x.trip.departureTime.localeCompare(y.trip.departureTime));
 }
