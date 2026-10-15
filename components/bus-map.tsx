@@ -24,7 +24,7 @@ function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selec
     return `<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-dot{background:#07875f;border:3px solid #fff;border-radius:50%;box-shadow:0 1px 6px #2348;width:18px;height:18px}.stop-dot{background:#fff;border:2px solid #07875f;border-radius:50%;width:8px;height:8px}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
+<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid #07875f;box-shadow:0 2px 8px #2348;font-size:23px;line-height:1}.stop-dot{background:#fff;border:2px solid #07875f;border-radius:50%;width:8px;height:8px}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
 </head><body><div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -41,10 +41,10 @@ function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selec
  const locate=L.control({position:'topright'});
  locate.onAdd=function(){const b=L.DomUtil.create('button','map-tag');b.type='button';b.textContent='◎ My location';b.onclick=function(){map.locate({setView:true,maxZoom:15,enableHighAccuracy:true})};return b};locate.addTo(map);
  map.on('locationerror',function(){});
- stops.forEach(function(s){L.circleMarker([s.lat,s.lng],{radius:4,color:'#07875f',weight:2,fillColor:'#fff',fillOpacity:1}).bindTooltip(s.name,{direction:'top'}).addTo(map)});
+ route.forEach(function(s,i){L.circleMarker([s.lat,s.lng],{radius:i===0||i===route.length-1?6:4,color:'#07875f',weight:2,fillColor:'#fff',fillOpacity:1}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'')+s.name,{direction:'top'}).addTo(map)});
  if(route.length>1){L.polyline(route.map(function(s){return [s.lat,s.lng]}),{color:'#07875f',weight:5,opacity:.9}).addTo(map)}
- buses.forEach(function(b){const marker=L.marker([b.lat,b.lng],{icon:L.divIcon({className:'',html:'<div class="bus-dot"></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map);marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>ETA '+b.eta+' min');marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}})});
- if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));map.fitBounds(bounds.pad(.18),{maxZoom:12})}
+ buses.forEach(function(b){const marker=L.marker([b.lat,b.lng],{icon:L.divIcon({className:'',html:'<div class="bus-emoji">🚌</div>',iconSize:[36,36],iconAnchor:[18,18]})}).addTo(map);marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>ETA '+b.eta+' min');marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}})});
+ if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));if(buses.length){buses.forEach(function(b){bounds.extend([b.lat,b.lng])})}map.fitBounds(bounds.pad(.18),{maxZoom:12})}else if(buses.length){map.setView([buses[0].lat,buses[0].lng],13)}
  setTimeout(function(){map.invalidateSize()},200);
 })();
 </script></body></html>`;
