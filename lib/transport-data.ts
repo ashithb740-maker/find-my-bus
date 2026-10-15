@@ -55,7 +55,13 @@ export function routeStopIds(stopNames:string[]){return stopNames.map(slug);}
 export function getStop(id:string){return STOPS.find(stop=>stop.id===id);}
 export function getRoute(id:string){return ROUTES.find(route=>route.id===id);}
 export function getBusesForRoute(routeId:string){return BUS_SEEDS.filter(bus=>bus.routeId===routeId);}
-function stopCoordinates(name:string){const stop=STOPS.find(item=>item.name.toLowerCase()===name.toLowerCase());return stop?{latitude:stop.latitude,longitude:stop.longitude}:DEMO_CENTER;}
+function stopCoordinates(name:string){
+  const normalized=name.trim().toLowerCase().replace(/[.]/g,"");
+  const aliases:Record<string,string>={"subramanya":"subrahmanya","subrahmanya":"subrahmanya","uppinangadi":"uppinangady","uppinangady":"uppinangady"};
+  const target=aliases[normalized]??normalized;
+  const stop=STOPS.find(item=>item.name.toLowerCase()===target||item.id===target||item.id===target.replace(/[^a-z0-9]+/g,"-"));
+  return stop?{latitude:stop.latitude,longitude:stop.longitude}:DEMO_CENTER;
+}
 function orderedStops(bus:BusSeed){const names=bus.stopNames?.length?bus.stopNames:[];const ordered=bus.direction==="REVERSE"?[...names].reverse():names;return ordered.length?ordered:[bus.routeName||"Route"];}
 export function hydrateBus(seed:BusSeed,now=Date.now()):LiveBus{
   const names=orderedStops(seed);const totalSegments=Math.max(names.length-1,1);const segmentProgress=Math.min(seed.progress,0.999)*totalSegments;
