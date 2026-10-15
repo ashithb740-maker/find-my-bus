@@ -93,6 +93,8 @@ export default function RootLayout() {
           <AppStateProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="plan" />
+            <Stack.Screen name="bus/[id]" />
             <Stack.Screen name="oauth/callback" />
           </Stack>
           </AppStateProvider>
