@@ -23,12 +23,12 @@ function findNamedStop(name: string) {
   );
 }
 
-function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void }) {
+function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void; routeStopNames?: string[] }) {
   const colors = useColors();
   const frameRef = useRef<any>(null);
   const selected = buses.find((bus) => bus.id === selectedBusId) ?? buses[0];
   const stopData = STOPS.map((stop) => ({ id: stop.id, name: stop.name, lat: stop.latitude, lng: stop.longitude }));
-  const routeNames = selected?.stopNames ?? [];
+  const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames ?? []);
   const orderedNames = selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
   const routeData = orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ name: stop.name, lat: stop.latitude, lng: stop.longitude }));
   const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));
@@ -78,7 +78,7 @@ function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selec
   </View>;
 }
 
-export function BusMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void }) {
+export function BusMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void; routeStopNames?: string[] }) {
   const colors = useColors();
   const mapRef = useRef<any>(null);
   const native = useMemo(() => {
@@ -88,12 +88,12 @@ export function BusMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]
       return require("react-native-maps");
     } catch { return null; }
   }, []);
-  if (Platform.OS === "web" || !native) return <WebMap buses={buses} selectedBusId={selectedBusId} onSelectBus={onSelectBus} />;
+  if (Platform.OS === "web" || !native) return <WebMap buses={buses} selectedBusId={selectedBusId} onSelectBus={onSelectBus} routeStopNames={routeStopNames} />;
   const MapView = native.default;
   const Marker = native.Marker;
   const PolylineNative = native.Polyline;
   const selected = buses.find((bus) => bus.id === selectedBusId) ?? buses[0];
-  const routeNames = selected?.stopNames ?? [];
+  const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames ?? []);
   const orderedNames = selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
   const coordinates = orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ latitude: stop.latitude, longitude: stop.longitude }));
   return <View style={styles.nativeMap}><MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={{ ...DEMO_CENTER, latitudeDelta: 0.32, longitudeDelta: 0.32 }} showsUserLocation={false}><PolylineNative coordinates={coordinates} strokeColor={colors.primary} strokeWidth={5} />{STOPS.map((stop) => <Marker key={stop.id} coordinate={{ latitude: stop.latitude, longitude: stop.longitude }} title={stop.name} pinColor={colors.primary} />)}{buses.map((bus) => <Marker key={bus.id} coordinate={{ latitude: bus.latitude, longitude: bus.longitude }} title={bus.vehicle || bus.id} description={`${bus.currentStop} → ${bus.nextStop}`} pinColor={bus.id === selectedBusId ? colors.primary : colors.success} onPress={() => onSelectBus?.(bus.id)} />)}</MapView><View pointerEvents="none" className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5"><Text style={{ color: colors.primary }} className="text-[10px] font-extrabold tracking-widest">BUS TRACKING MAP</Text></View></View>;
