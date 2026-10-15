@@ -10,11 +10,12 @@ import { useAppState } from "@/lib/app-state";
 import { getRoute, getStop } from "@/lib/transport-data";
 
 export default function BusDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const colors = useColors();
   const { buses, savedBuses, toggleSaved, addAlert, isOffline } = useAppState();
-  const bus = useMemo(() => buses.find((item) => item.id === id) ?? buses[0], [buses, id]);
-  if (!bus) return <ScreenContainer className="px-5" edges={["top", "left", "right"]}><ScreenHeader title="Bus tracking" subtitle="No active bus selected" /><View className="flex-1 justify-center"><EmptyState icon="directions-bus" title="No live bus yet" message="Ask an Administrator to add a bus. Once a driver starts a trip, its map position and route progress will appear here." /><PrimaryButton title="Back to live status" icon="arrow-back" variant="soft" onPress={() => router.replace("/(tabs)/track" as never)} style={{ marginTop: 16 }} /></View></ScreenContainer>;
+  const bus = useMemo(() => id ? buses.find((item) => item.id.toLowerCase() === decodeURIComponent(id).toLowerCase()) : undefined, [buses, id]);
+  if (!bus) return <ScreenContainer className="px-5" edges={["top", "left", "right"]}><ScreenHeader title="Bus tracking" subtitle="No active bus selected" /><View className="flex-1 justify-center"><EmptyState icon="directions-bus" title="No live bus yet" message="The selected bus could not be loaded. Go back to the journey results and try again, or ask the Administrator to check that the scheduled trip has a matching bus." /><PrimaryButton title="Back to live status" icon="arrow-back" variant="soft" onPress={() => router.replace("/(tabs)/track" as never)} style={{ marginTop: 16 }} /></View></ScreenContainer>;
   const route = getRoute(bus.routeId);
   const routeStops = (Array.isArray(route?.stopIds) ? route.stopIds : []).map((stopId) => getStop(stopId)).filter(Boolean) as { id: string; name: string }[];
   const saved = savedBuses.includes(bus.id);
