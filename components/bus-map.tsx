@@ -7,7 +7,20 @@ import { DEMO_CENTER, STOPS, type LiveBus } from "@/lib/transport-data";
 const MAP_HEIGHT = 320;
 
 function findNamedStop(name: string) {
-  return STOPS.find((stop) => stop.name.toLowerCase() === name.toLowerCase() || stop.id === name.toLowerCase().replace(/[^a-z0-9]+/g, "-"));
+  const normalized = name.trim().toLowerCase().replace(/[.]/g, "");
+  const aliases: Record<string, string> = {
+    subramanya: "subrahmanya",
+    "subramanya temple": "subrahmanya",
+    subrahmanya: "subrahmanya",
+    uppinangadi: "uppinangady",
+    uppinangady: "uppinangady",
+  };
+  const target = aliases[normalized] ?? normalized;
+  return STOPS.find((stop) =>
+    stop.name.toLowerCase() === target ||
+    stop.id === target ||
+    stop.id === target.replace(/[^a-z0-9]+/g, "-")
+  );
 }
 
 function WebMap({ buses, selectedBusId, onSelectBus }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void }) {
