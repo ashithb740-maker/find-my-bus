@@ -41,12 +41,12 @@ export const STOPS: Stop[] = [
   { id:"mangaluru-junction",name:"Mangaluru Junction",area:"Kulashekar",latitude:12.8705,longitude:74.8864,facilities:["Shelter","Information"] },
   { id:"airport",name:"Mangaluru Airport",area:"Bajpe",latitude:12.9618,longitude:74.8901,facilities:["Shelter","Information","Parking"] },
   { id:"urva-store",name:"Urva Store",area:"Mangaluru",latitude:12.902,longitude:74.842,facilities:["Shelter"] },
-  { id:"subrahmanya",name:"Subrahmanya Bus Stand",area:"Kadaba",latitude:12.66589,longitude:75.61386,facilities:["Shelter","Information"] },
+  { id:"subrahmanya",name:"Subrahmanya",area:"Kadaba",latitude:12.66589,longitude:75.61386,facilities:["Shelter","Information"] },
   { id:"nettana",name:"Nettana",area:"Kadaba",latitude:12.7262,longitude:75.5538,facilities:["Shelter"] },
   { id:"mardala",name:"Mardala",area:"Dakshina Kannada",latitude:12.7428,longitude:75.508,facilities:["Shelter","Information"] },
   { id:"kadaba",name:"Kadaba",area:"Dakshina Kannada",latitude:12.743,longitude:75.4709,facilities:["Shelter","Retail","Information"] },
   { id:"alankaru",name:"Alankaru",area:"Dakshina Kannada",latitude:12.7774,longitude:75.3519,facilities:["Shelter"] },
-  { id:"uppinangady",name:"Uppinangady Bus Stand",area:"Dakshina Kannada",latitude:12.83982,longitude:75.24886,facilities:["Shelter","Information"] }
+  { id:"uppinangady",name:"Uppinangady",area:"Dakshina Kannada",latitude:12.83982,longitude:75.24886,facilities:["Shelter","Information"] }
 ];
 export const ROUTES: Route[] = [];
 export const BUS_SEEDS: BusSeed[] = [];
