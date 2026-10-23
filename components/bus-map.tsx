@@ -55,7 +55,16 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
  locate.onAdd=function(){const b=L.DomUtil.create('button','map-tag');b.type='button';b.textContent='◎ My location';b.onclick=function(){map.locate({setView:true,maxZoom:15,enableHighAccuracy:true})};return b};locate.addTo(map);
  map.on('locationerror',function(){});
  route.forEach(function(s,i){L.circleMarker([s.lat,s.lng],{radius:i===0||i===route.length-1?6:4,color:'#07875f',weight:2,fillColor:'#fff',fillOpacity:1}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'')+s.name,{direction:'top'}).addTo(map)});
- if(route.length>1){L.polyline(route.map(function(s){return [s.lat,s.lng]}),{color:'#07875f',weight:5,opacity:.9}).addTo(map)}
+ if(route.length>1){
+   const straight=L.polyline(route.map(function(s){return [s.lat,s.lng]}),{color:'#07875f',weight:5,opacity:.9,dashArray:'7 7'}).addTo(map);
+   const roadUrl='https://router.project-osrm.org/route/v1/driving/'+route.map(function(s){return s.lng+','+s.lat}).join(';')+'?overview=full&geometries=geojson&steps=false';
+   fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
+     if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)return;
+     const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
+     map.removeLayer(straight);
+     L.polyline(coords,{color:'#07875f',weight:6,opacity:.92,lineJoin:'round'}).addTo(map);
+   }).catch(function(){straight.setStyle({dashArray:null,opacity:.55})});
+ }
  buses.forEach(function(b){const marker=L.marker([b.lat,b.lng],{icon:L.divIcon({className:'',html:'<div class="bus-emoji">🚌</div>',iconSize:[36,36],iconAnchor:[18,18]})}).addTo(map);marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>ETA '+b.eta+' min');marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}})});
  if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));if(buses.length){buses.forEach(function(b){bounds.extend([b.lat,b.lng])})}map.fitBounds(bounds.pad(.18),{maxZoom:12})}else if(buses.length){map.setView([buses[0].lat,buses[0].lng],13)}
  setTimeout(function(){map.invalidateSize()},200);
