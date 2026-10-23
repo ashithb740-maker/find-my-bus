@@ -37,7 +37,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
     return `<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:15px;background:#087f9b;border:3px solid #fff;box-shadow:0 2px 9px #2348;font-size:25px;line-height:1}.stop-emoji{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#07875f;border:2px solid #fff;box-shadow:0 1px 5px #1238;color:#fff;font-size:12px;font-weight:900;line-height:1}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
+<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:15px;background:#087f9b;border:3px solid #fff;box-shadow:0 2px 9px #2348;font-size:25px;line-height:1}.stop-emoji{display:block;width:16px;height:16px;border-radius:50%;background:#00a86b;border:3px solid #ffffff;box-shadow:0 0 0 2px #007a4d,0 2px 7px #0008;box-sizing:border-box}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
 </head><body><div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -63,7 +63,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    }
    route.forEach(function(s,i){
      const pos=nearestRoadPoint(s.lat,s.lng);
-     const icon=L.divIcon({className:'',html:'<div class="stop-emoji">●</div>',iconSize:[22,22],iconAnchor:[11,11]});
+     const icon=L.divIcon({className:'',html:'<div class="stop-emoji"></div>',iconSize:[16,16],iconAnchor:[8,8]});
      L.marker(pos,{icon,zIndexOffset:3000}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'STOP · ')+s.name,{direction:'top',offset:[0,-12]}).addTo(map);
    });
  };
