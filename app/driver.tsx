@@ -24,8 +24,11 @@ export default function DriverScreen() {
     let active = true;
     const publish = (position: { latitude: number; longitude: number; speed?: number | null; heading?: number | null }) => {
       if (!active) return;
-      updateBusTelemetry(bus.id, { latitude: position.latitude, longitude: position.longitude, speed: Math.max(0, Math.round((position.speed ?? bus.speed) * 3.6)), heading: Math.round(position.heading ?? bus.heading) });
-      setGpsState("ACTIVE");
+      const telemetry = { latitude: position.latitude, longitude: position.longitude, speed: Math.max(0, Math.round((position.speed ?? 0) * 3.6)), heading: Math.round(position.heading ?? bus.heading) };
+      updateBusTelemetry(bus.id, telemetry);
+      void fetch("/api/gps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ busId: bus.id, ...telemetry }) })
+        .then((response) => { if (!response.ok) throw new Error("GPS publish failed"); setGpsState("ACTIVE"); })
+        .catch(() => setGpsState("ERROR"));
     };
     const start = async () => {
       setGpsState("REQUESTING");
