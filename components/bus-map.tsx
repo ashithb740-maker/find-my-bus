@@ -54,18 +54,40 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
  const locate=L.control({position:'topright'});
  locate.onAdd=function(){const b=L.DomUtil.create('button','map-tag');b.type='button';b.textContent='◎ My location';b.onclick=function(){map.locate({setView:true,maxZoom:15,enableHighAccuracy:true})};return b};locate.addTo(map);
  map.on('locationerror',function(){});
- let roadLayer=null;
+ const addStopMarkers=function(roadCoords){
+   function nearestRoadPoint(lat,lng){
+     if(!roadCoords||!roadCoords.length)return [lat,lng];
+     let best=roadCoords[0],bestD=Infinity;
+     roadCoords.forEach(function(p){const d=(p[0]-lat)*(p[0]-lat)+(p[1]-lng)*(p[1]-lng);if(d<bestD){bestD=d;best=p}});
+     return best;
+   }
+   route.forEach(function(s,i){
+     const pos=nearestRoadPoint(s.lat,s.lng);
+     const icon=L.divIcon({className:'',html:'<div class="stop-emoji">●</div>',iconSize:[22,22],iconAnchor:[11,11]});
+     L.marker(pos,{icon,zIndexOffset:3000}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'STOP · ')+s.name,{direction:'top',offset:[0,-12]}).addTo(map);
+   });
+ };
+ const addBusMarkers=function(){
+   buses.forEach(function(b){
+     const marker=L.marker([b.lat,b.lng],{zIndexOffset:4000,icon:L.divIcon({className:'',html:'<div class="bus-emoji">🚌</div>',iconSize:[42,42],iconAnchor:[21,21]})}).addTo(map);
+     marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Demo bus at start stop (GPS not connected)');
+     marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}});
+   });
+ };
  if(route.length>1){
    const roadUrl='https://router.project-osrm.org/route/v1/driving/'+route.map(function(s){return s.lng+','+s.lat}).join(';')+'?overview=full&geometries=geojson&steps=false';
    fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
      if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)throw new Error('No road geometry');
      const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
-     roadLayer=L.polyline(coords,{color:'#07875f',weight:7,opacity:.96,lineJoin:'round',lineCap:'round'}).addTo(map);
-     roadLayer.bringToBack();
-   }).catch(function(){roadLayer=L.polyline(route.map(function(s){return [s.lat,s.lng]}),{color:'#07875f',weight:5,opacity:.8,dashArray:'7 7'}).addTo(map);});
- }
- route.forEach(function(s,i){const icon=L.divIcon({className:'',html:'<div class="stop-emoji">●</div>',iconSize:[22,22],iconAnchor:[11,11]});const marker=L.marker([s.lat,s.lng],{icon,zIndexOffset:1000}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'STOP · ')+s.name,{direction:'top',offset:[0,-25]});marker.addTo(map);});
- buses.forEach(function(b){const marker=L.marker([b.lat,b.lng],{zIndexOffset:2000,icon:L.divIcon({className:'',html:'<div class="bus-emoji">🚌</div>',iconSize:[42,42],iconAnchor:[21,21]})}).addTo(map);marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Demo bus at start stop (GPS not connected)');marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}})});
+     L.polyline(coords,{color:'#07875f',weight:7,opacity:.96,lineJoin:'round',lineCap:'round'}).addTo(map);
+     addStopMarkers(coords);
+   }).catch(function(){
+     const coords=route.map(function(s){return [s.lat,s.lng]});
+     L.polyline(coords,{color:'#07875f',weight:5,opacity:.8,dashArray:'7 7'}).addTo(map);
+     addStopMarkers(coords);
+   });
+ }else{addStopMarkers([]);}
+ addBusMarkers();
  if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));map.fitBounds(bounds.pad(.18),{maxZoom:15})}else if(buses.length){map.setView([buses[0].lat,buses[0].lng],13)}
  setTimeout(function(){map.invalidateSize()},200);
 })();
