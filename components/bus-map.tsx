@@ -37,7 +37,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
     return `<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:#087f9b;border:3px solid #fff;box-shadow:0 2px 9px #2348;font-size:30px;line-height:1}.stop-emoji{display:block;width:16px;height:16px;border-radius:50%;background:#00a86b;border:3px solid #ffffff;box-shadow:0 0 0 2px #007a4d,0 2px 7px #0008;box-sizing:border-box}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
+<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:16px;background:#087f9b;border:3px solid #fff;box-shadow:0 2px 9px #2348;line-height:1}.bus-emoji svg{width:34px;height:34px;display:block}.stop-emoji{display:block;width:16px;height:16px;border-radius:50%;background:#00a86b;border:3px solid #ffffff;box-shadow:0 0 0 2px #007a4d,0 2px 7px #0008;box-sizing:border-box}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
 </head><body><div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -80,7 +80,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
  };
  const addBusMarkers=function(){
    buses.forEach(function(b){
-     const marker=L.marker([b.lat,b.lng],{zIndexOffset:4000,icon:L.divIcon({className:'',html:'<div class="bus-emoji">🚌</div>',iconSize:[48,48],iconAnchor:[24,24]})}).addTo(map);
+     const marker=L.marker([b.lat,b.lng],{zIndexOffset:4000,icon:L.divIcon({className:'',html:'<div class="bus-emoji"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="3" width="24" height="25" rx="4" fill="#ffffff"/><rect x="7" y="6" width="18" height="11" rx="1.5" fill="#55d8ef"/><rect x="7" y="19" width="18" height="4" rx="1" fill="#55d8ef"/><circle cx="9" cy="26" r="2.5" fill="#ffffff"/><circle cx="23" cy="26" r="2.5" fill="#ffffff"/></svg></div>',iconSize:[48,48],iconAnchor:[24,24]})}).addTo(map);
      marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Demo bus at start stop (GPS not connected)');
      marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}});
    });
