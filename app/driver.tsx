@@ -10,7 +10,8 @@ import { useAppState } from "@/lib/app-state";
 export default function DriverScreen() {
   const colors = useColors();
   const { buses, updateBusTelemetry, setDemoLocation } = useAppState();
-  const bus = buses[0];
+  const [assignedBusId, setAssignedBusId] = useState<string | undefined>(undefined);
+  const bus = buses.find((item) => item.id === assignedBusId) ?? buses[0];
   const [tripStatus, setTripStatus] = useState<"READY" | "IN PROGRESS" | "PAUSED">("READY");
   const [gpsMode, setGpsMode] = useState<"REAL GPS" | "DEMO GPS">("REAL GPS");
   const [gpsState, setGpsState] = useState<"OFF" | "REQUESTING" | "ACTIVE" | "ERROR">("OFF");
