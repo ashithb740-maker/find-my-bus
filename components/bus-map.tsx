@@ -64,7 +64,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
      roadLayer.bringToBack();
    }).catch(function(){roadLayer=L.polyline(route.map(function(s){return [s.lat,s.lng]}),{color:'#07875f',weight:5,opacity:.8,dashArray:'7 7'}).addTo(map);});
  }
- route.forEach(function(s,i){const icon=L.divIcon({className:'',html:'<div class="stop-emoji">🛑</div>',iconSize:[30,34],iconAnchor:[15,30]});L.marker([s.lat,s.lng],{icon,zIndexOffset:1000}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'STOP · ')+s.name,{direction:'top',offset:[0,-25]}).addTo(map)});
+ route.forEach(function(s,i){const icon=L.divIcon({className:'',html:'<div class="stop-emoji">🛑</div>',iconSize:[30,34],iconAnchor:[15,30]});const marker=L.marker([s.lat,s.lng],{icon,zIndexOffset:1000}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'STOP · ')+s.name,{direction:'top',offset:[0,-25]});marker.addTo(map);});
  buses.forEach(function(b){const marker=L.marker([b.lat,b.lng],{zIndexOffset:2000,icon:L.divIcon({className:'',html:'<div class="bus-emoji">🚌</div>',iconSize:[42,42],iconAnchor:[21,21]})}).addTo(map);marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Demo bus at start stop (GPS not connected)');marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}})});
  if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));map.fitBounds(bounds.pad(.18),{maxZoom:15})}else if(buses.length){map.setView([buses[0].lat,buses[0].lng],13)}
  setTimeout(function(){map.invalidateSize()},200);
