@@ -31,13 +31,13 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames ?? []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
   const routeData = orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ name: stop.name, lat: stop.latitude, lng: stop.longitude }));
-  const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));
+  const busData = buses.map((bus) => { const start = routeData[0] ?? findNamedStop("Subrahmanya"); const demoAtStart = start && (routeStopNames?.length || bus.stopNames?.length); return { id: bus.id, vehicle: bus.vehicle || bus.id, lat: demoAtStart ? start.lat : bus.latitude, lng: demoAtStart ? start.lng : bus.longitude, currentStop: demoAtStart ? start.name : bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }; });
   const mapHtml = useMemo(() => {
     const safeJson = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c");
     return `<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:#fff;border:2px solid #07875f;box-shadow:0 2px 8px #2348;font-size:23px;line-height:1}.stop-dot{background:#fff;border:2px solid #07875f;border-radius:50%;width:8px;height:8px}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
+<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:15px;background:#087f9b;border:3px solid #fff;box-shadow:0 2px 9px #2348;font-size:25px;line-height:1}.stop-emoji{display:flex;align-items:center;justify-content:center;width:30px;height:34px;font-size:27px;line-height:1;filter:drop-shadow(0 2px 2px #0005)}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
 </head><body><div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -54,27 +54,19 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
  const locate=L.control({position:'topright'});
  locate.onAdd=function(){const b=L.DomUtil.create('button','map-tag');b.type='button';b.textContent='◎ My location';b.onclick=function(){map.locate({setView:true,maxZoom:15,enableHighAccuracy:true})};return b};locate.addTo(map);
  map.on('locationerror',function(){});
- route.forEach(function(s,i){L.circleMarker([s.lat,s.lng],{radius:i===0||i===route.length-1?6:4,color:'#07875f',weight:2,fillColor:'#fff',fillOpacity:1}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'')+s.name,{direction:'top'}).addTo(map)});
+ let roadLayer=null;
  if(route.length>1){
-   const routeLayers=[];
-   const addRoadLeg=function(index){
-     if(index>=route.length-1)return Promise.resolve();
-     const a=route[index],b=route[index+1];
-     const roadUrl='https://router.project-osrm.org/route/v1/driving/'+a.lng+','+a.lat+';'+b.lng+','+b.lat+'?overview=full&geometries=geojson&steps=false';
-     return fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
-       if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)throw new Error('No road geometry');
-       const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
-       routeLayers.push(L.polyline(coords,{color:'#07875f',weight:6,opacity:.92,lineJoin:'round'}).addTo(map));
-       return addRoadLeg(index+1);
-     });
-   };
-   addRoadLeg(0).catch(function(){
-     routeLayers.forEach(function(layer){map.removeLayer(layer)});
-     L.polyline(route.map(function(s){return [s.lat,s.lng]}),{color:'#07875f',weight:5,opacity:.7,dashArray:'7 7'}).addTo(map);
-   });
+   const roadUrl='https://router.project-osrm.org/route/v1/driving/'+route.map(function(s){return s.lng+','+s.lat}).join(';')+'?overview=full&geometries=geojson&steps=false';
+   fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
+     if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)throw new Error('No road geometry');
+     const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
+     roadLayer=L.polyline(coords,{color:'#07875f',weight:7,opacity:.96,lineJoin:'round',lineCap:'round'}).addTo(map);
+     roadLayer.bringToBack();
+   }).catch(function(){roadLayer=L.polyline(route.map(function(s){return [s.lat,s.lng]}),{color:'#07875f',weight:5,opacity:.8,dashArray:'7 7'}).addTo(map);});
  }
- buses.forEach(function(b){const marker=L.marker([b.lat,b.lng],{icon:L.divIcon({className:'',html:'<div class="bus-emoji">🚌</div>',iconSize:[36,36],iconAnchor:[18,18]})}).addTo(map);marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>ETA '+b.eta+' min');marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}})});
- if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));if(buses.length){buses.forEach(function(b){bounds.extend([b.lat,b.lng])})}map.fitBounds(bounds.pad(.18),{maxZoom:12})}else if(buses.length){map.setView([buses[0].lat,buses[0].lng],13)}
+ route.forEach(function(s,i){const icon=L.divIcon({className:'',html:'<div class="stop-emoji">🛑</div>',iconSize:[30,34],iconAnchor:[15,30]});L.marker([s.lat,s.lng],{icon,zIndexOffset:1000}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'STOP · ')+s.name,{direction:'top',offset:[0,-25]}).addTo(map)});
+ buses.forEach(function(b){const marker=L.marker([b.lat,b.lng],{zIndexOffset:2000,icon:L.divIcon({className:'',html:'<div class="bus-emoji">🚌</div>',iconSize:[42,42],iconAnchor:[21,21]})}).addTo(map);marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Demo bus at start stop (GPS not connected)');marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}})});
+ if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));map.fitBounds(bounds.pad(.18),{maxZoom:15})}else if(buses.length){map.setView([buses[0].lat,buses[0].lng],13)}
  setTimeout(function(){map.invalidateSize()},200);
 })();
 </script></body></html>`;
