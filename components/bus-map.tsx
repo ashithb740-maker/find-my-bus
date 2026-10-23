@@ -80,7 +80,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
  };
  const addBusMarkers=function(){
    buses.forEach(function(b){
-     const marker=L.marker([b.lat,b.lng],{zIndexOffset:4000,icon:L.divIcon({className:'',html:'<div class="bus-emoji"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="3" width="24" height="25" rx="4" fill="#ffffff"/><rect x="7" y="6" width="18" height="11" rx="1.5" fill="#55d8ef"/><rect x="7" y="19" width="18" height="4" rx="1" fill="#55d8ef"/><circle cx="9" cy="26" r="2.5" fill="#ffffff"/><circle cx="23" cy="26" r="2.5" fill="#ffffff"/></svg></div>',iconSize:[48,48],iconAnchor:[24,24]})}).addTo(map);
+     const marker=L.marker([b.lat,b.lng],{zIndexOffset:4000,icon:L.divIcon({className:'',html:'<div class="bus-emoji"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 5h24c3.9 0 6 2.8 6 6.5V34a3 3 0 0 1-3 3h-2v3.5a2.5 2.5 0 0 1-5 0V37H16v3.5a2.5 2.5 0 0 1-5 0V37H9a3 3 0 0 1-3-3V11.5C6 7.8 8.1 5 12 5Z" fill="#fff"/><path d="M12 10h24v14H12z" rx="2" fill="#52d8ef"/><path d="M12 27h24v5H12z" fill="#52d8ef"/><path d="M10 34h4v3h-4zM34 34h4v3h-4z" fill="#fff"/><circle cx="12" cy="39" r="2.5" fill="#fff"/><circle cx="36" cy="39" r="2.5" fill="#fff"/></svg></div>',iconSize:[48,48],iconAnchor:[24,24]})}).addTo(map);
      marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Demo bus at start stop (GPS not connected)');
      marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}});
    });
