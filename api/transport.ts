@@ -35,6 +35,7 @@ export default async function handler(req: any, res: any) {
     if (req.method === "GET") {
       const state = await collection.findOne({ _id: id });
       return res.status(200).json({
+        exists: Boolean(state),
         routes: state?.routes ?? [],
         trips: state?.trips ?? [],
         buses: state?.buses ?? [],
