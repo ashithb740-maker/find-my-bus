@@ -69,9 +69,7 @@ export default function SeatLayoutScreen() {
           <View className="w-[58px] items-center justify-between rounded-xl py-2" style={{ backgroundColor: c.surfaceAlt }}>
             <Text className="text-[9px] font-extrabold text-muted">AISLE</Text>
             <View className="flex-1 my-2 w-[2px] rounded-full" style={{ backgroundColor: c.border }} />
-            <Text style={{ color: GROUPS.conductor.color }} className="text-[9px] font-black">36</Text>
-            <MaterialIcons name="event-seat" size={21} color={GROUPS.conductor.color}/>
-            <Text style={{ color: GROUPS.conductor.color }} className="text-center text-[8px] font-extrabold">CONDUCTOR</Text>
+            <Pressable onPress={() => setSelected(36)} accessibilityRole="button" accessibilityLabel="Seat 36, conductor seat" className="items-center rounded-lg p-1" style={{ backgroundColor: selected === 36 ? GROUPS.conductor.color : GROUPS.conductor.soft }}><Text style={{ color: selected === 36 ? "#FFFFFF" : GROUPS.conductor.color }} className="text-[9px] font-black">36</Text><MaterialIcons name="event-seat" size={21} color={selected === 36 ? "#FFFFFF" : GROUPS.conductor.color}/><Text style={{ color: selected === 36 ? "#FFFFFF" : GROUPS.conductor.color }} className="text-center text-[8px] font-extrabold">CONDUCTOR</Text></Pressable>
           </View>
         </View>
         <View className="mt-3 items-center rounded-xl py-3" style={{ backgroundColor: c.surfaceAlt }}><Text className="text-[10px] font-extrabold tracking-[2px] text-muted">REAR OF BUS</Text></View>
