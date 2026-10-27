@@ -54,31 +54,14 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
  const locate=L.control({position:'topright'});
  locate.onAdd=function(){const b=L.DomUtil.create('button','map-tag');b.type='button';b.textContent='◎ My location';b.onclick=function(){map.locate({setView:true,maxZoom:15,enableHighAccuracy:true})};return b};locate.addTo(map);
  map.on('locationerror',function(){});
- const addStopMarkers=function(roadCoords){
-   function nearestRoadPoint(lat,lng){
-     if(!roadCoords||!roadCoords.length)return [lat,lng];
-     if(roadCoords.length===1)return roadCoords[0];
-     // Project the stop onto every route segment, not just nearby route vertices.
-     const cosLat=Math.cos(lat*Math.PI/180);
-     let best=roadCoords[0],bestD=Infinity;
-     for(let i=0;i<roadCoords.length-1;i++){
-       const a=roadCoords[i],b=roadCoords[i+1];
-       const ax=(a[1]-lng)*cosLat, ay=a[0]-lat;
-       const bx=(b[1]-lng)*cosLat, by=b[0]-lat;
-       const dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy||1;
-       const t=Math.max(0,Math.min(1,-(ax*dx+ay*dy)/len));
-       const dX=ax+t*dx,dY=ay+t*dy,d=dX*dX+dY*dY;
-       if(d<bestD){bestD=d;best=[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
-     }
-     return best;
-   }
+ const addStopMarkers=function(snappedCoords){
    route.forEach(function(s,i){
-     const pos=nearestRoadPoint(s.lat,s.lng);
+     const pos=snappedCoords&&snappedCoords[i]?[snappedCoords[i][1],snappedCoords[i][0]]:[s.lat,s.lng];
      const icon=L.divIcon({className:'',html:'<div class="stop-emoji"></div>',iconSize:[16,16],iconAnchor:[8,8]});
      L.marker(pos,{icon,zIndexOffset:5000,keyboard:true}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'STOP · ')+s.name,{direction:'top',offset:[0,-12]}).addTo(map);
    });
  };
- const busMarkers=[];
+  const busMarkers=[];
  const markerById={};
  window.addEventListener('message',function(event){const msg=event.data;if(!msg||msg.type!=='find-my-bus-update')return;(msg.buses||[]).forEach(function(b){const marker=markerById[b.id];if(marker&&Number.isFinite(b.lat)&&Number.isFinite(b.lng)){marker.setLatLng([b.lat,b.lng]);}})});
  const getBusIconSize=function(){
@@ -108,12 +91,15 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
      if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)throw new Error('No road geometry');
      const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
-     L.polyline(coords,{color:'#07875f',weight:7,opacity:.96,lineJoin:'round',lineCap:'round'}).addTo(map);
-     addStopMarkers(coords);
+     L.polyline(coords,{color:'#07875f',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
+     // OSRM returns the actual snapped road-network waypoint for each requested stop.
+     // Use those exact coordinates for markers so they sit on the routed path.
+     const snapped=(data.waypoints||[]).map(function(w){return w.location;});
+     addStopMarkers(snapped.length===route.length?snapped:null);
    }).catch(function(){
      const coords=route.map(function(s){return [s.lat,s.lng]});
-     L.polyline(coords,{color:'#07875f',weight:5,opacity:.8,dashArray:'7 7'}).addTo(map);
-     addStopMarkers(coords);
+     // If the routing service fails, do not pretend a straight stop-to-stop line follows roads.
+     addStopMarkers(null);
    });
  }else{addStopMarkers([]);}
  addBusMarkers();
