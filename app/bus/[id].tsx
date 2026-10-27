@@ -9,6 +9,8 @@ import { useColors } from "@/hooks/use-colors";
 import { useAppState } from "@/lib/app-state";
 import { getRoute, getStop } from "@/lib/transport-data";
 
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || "https://find-my-bus-api-8yqn.onrender.com").replace(/\/$/, "");
+
 export default function BusDetailScreen() {
   const params = useLocalSearchParams<{ id?: string | string[]; from?: string | string[]; to?: string | string[]; routeStops?: string | string[]; direction?: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -24,7 +26,7 @@ export default function BusDetailScreen() {
     let active = true;
     const refresh = async () => {
       try {
-        const response = await fetch(`/api/gps?busId=${encodeURIComponent(String(id))}`, { cache: "no-store" });
+        const response = await fetch(`${API_BASE_URL}/api/gps?busId=${encodeURIComponent(String(id))}`, { cache: "no-store" });
         if (!response.ok) return;
         const gps = await response.json();
         if (!active || !Number.isFinite(gps.latitude) || !Number.isFinite(gps.longitude)) return;
