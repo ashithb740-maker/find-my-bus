@@ -7,6 +7,8 @@ import { Card, PrimaryButton, ScreenHeader, StatusPill } from "@/components/tran
 import { useColors } from "@/hooks/use-colors";
 import { useAppState } from "@/lib/app-state";
 
+const API_BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL || "https://find-my-bus-api-8yqn.onrender.com").replace(/\/$/, "");
+
 export default function DriverScreen() {
   const colors = useColors();
   const { buses, updateBusTelemetry, setDemoLocation } = useAppState();
@@ -26,7 +28,7 @@ export default function DriverScreen() {
       if (!active) return;
       const telemetry = { latitude: position.latitude, longitude: position.longitude, speed: Math.max(0, Math.round((position.speed ?? 0) * 3.6)), heading: Math.round(position.heading ?? bus.heading) };
       updateBusTelemetry(bus.id, telemetry);
-      void fetch("/api/gps", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ busId: bus.id, ...telemetry }) })
+      void fetch(`${API_BASE_URL}/api/gps`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ busId: bus.id, ...telemetry }) })
         .then((response) => { if (!response.ok) throw new Error("GPS publish failed"); setGpsState("ACTIVE"); })
         .catch(() => setGpsState("ERROR"));
     };
