@@ -79,6 +79,8 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    });
  };
  const busMarkers=[];
+ const markerById={};
+ window.addEventListener('message',function(event){const msg=event.data;if(!msg||msg.type!=='find-my-bus-update')return;(msg.buses||[]).forEach(function(b){const marker=markerById[b.id];if(marker&&Number.isFinite(b.lat)&&Number.isFinite(b.lng)){marker.setLatLng([b.lat,b.lng]);}})});
  const getBusIconSize=function(){
    const z=map.getZoom();
    // Keep the bus prominent when zoomed in and scale it down as the map zooms out.
@@ -95,7 +97,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    buses.forEach(function(b){
      const size=getBusIconSize();
      const marker=L.marker([b.lat,b.lng],{zIndexOffset:10000,icon:L.divIcon({className:'',html:'<div class="bus-emoji" style="--bus-size:'+size+'px"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 5h24c3.9 0 6 2.8 6 6.5V34a3 3 0 0 1-3 3h-2v3.5a2.5 2.5 0 0 1-5 0V37H16v3.5a2.5 2.5 0 0 1-5 0V37H9a3 3 0 0 1-3-3V11.5C6 7.8 8.1 5 12 5Z" fill="#fff"/><path d="M12 10h24v14H12z" fill="#52d8ef"/><path d="M12 27h24v5H12z" fill="#52d8ef"/><path d="M10 34h4v3h-4zM34 34h4v3h-4z" fill="#fff"/><circle cx="12" cy="39" r="2.5" fill="#fff"/><circle cx="36" cy="39" r="2.5" fill="#fff"/></svg></div>',iconSize:[size,size],iconAnchor:[size/2,size/2]})}).addTo(map);
-     busMarkers.push(marker);
+     busMarkers.push(marker); markerById[b.id]=marker;
      marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Bus location · GPS / simulation');
      marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}});
    });
@@ -119,7 +121,11 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
  setTimeout(function(){map.invalidateSize()},200);
 })();
 </script></body></html>`;
-  }, [JSON.stringify(stopData), JSON.stringify(busData), JSON.stringify(routeData)]);
+  }, [JSON.stringify(stopData), JSON.stringify(routeData)]);
+  useEffect(() => {
+    if (Platform.OS !== "web" || !frameRef.current?.contentWindow) return;
+    frameRef.current.contentWindow.postMessage({ type: "find-my-bus-update", buses: busData }, "*");
+  }, [JSON.stringify(busData)]);
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
     const handler = (event: MessageEvent) => {
