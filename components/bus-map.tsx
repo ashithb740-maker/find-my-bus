@@ -31,7 +31,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames ?? []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
   const routeData = orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ name: stop.name, lat: stop.latitude, lng: stop.longitude }));
-  const busData = buses.map((bus) => { const start = routeData[0] ?? findNamedStop("Subrahmanya"); const demoAtStart = start && (routeStopNames?.length || bus.stopNames?.length); return { id: bus.id, vehicle: bus.vehicle || bus.id, lat: demoAtStart ? start.lat : bus.latitude, lng: demoAtStart ? start.lng : bus.longitude, currentStop: demoAtStart ? start.name : bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }; });
+  const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));
   const mapHtml = useMemo(() => {
     const safeJson = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c");
     return `<!doctype html>
@@ -96,7 +96,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
      const size=getBusIconSize();
      const marker=L.marker([b.lat,b.lng],{zIndexOffset:10000,icon:L.divIcon({className:'',html:'<div class="bus-emoji" style="--bus-size:'+size+'px"><svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 5h24c3.9 0 6 2.8 6 6.5V34a3 3 0 0 1-3 3h-2v3.5a2.5 2.5 0 0 1-5 0V37H16v3.5a2.5 2.5 0 0 1-5 0V37H9a3 3 0 0 1-3-3V11.5C6 7.8 8.1 5 12 5Z" fill="#fff"/><path d="M12 10h24v14H12z" fill="#52d8ef"/><path d="M12 27h24v5H12z" fill="#52d8ef"/><path d="M10 34h4v3h-4zM34 34h4v3h-4z" fill="#fff"/><circle cx="12" cy="39" r="2.5" fill="#fff"/><circle cx="36" cy="39" r="2.5" fill="#fff"/></svg></div>',iconSize:[size,size],iconAnchor:[size/2,size/2]})}).addTo(map);
      busMarkers.push(marker);
-     marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Demo bus at start stop (GPS not connected)');
+     marker.bindPopup('<b>'+String(b.vehicle).replace(/[&<>"]/g,'')+'</b><br>'+String(b.currentStop).replace(/[&<>"]/g,'')+' → '+String(b.nextStop).replace(/[&<>"]/g,'')+'<br>Bus location · GPS / simulation');
      marker.on('click',function(){try{window.parent.postMessage({type:'find-my-bus-select',id:b.id},'*')}catch(e){}});
    });
    map.on('zoomend',refreshBusIcons);
