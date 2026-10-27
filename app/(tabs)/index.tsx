@@ -22,7 +22,9 @@ export default function HomeScreen() {
     <ScreenContainer edges={["top", "left", "right"]} className="px-5">
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="flex-row items-center justify-between pt-3">
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center gap-2">
+            <Pressable accessibilityLabel="Open menu" onPress={() => router.push("/(tabs)/more")} style={{ borderColor: c.border }} className="h-11 w-11 items-center justify-center rounded-2xl border bg-surface"><MaterialIcons name="menu" size={25} color={c.foreground} /></Pressable>
+            <View className="flex-row items-center gap-3">
             <View style={{ backgroundColor: c.primary }} className="h-12 w-12 items-center justify-center rounded-2xl">
               <MaterialIcons name="directions-bus" size={27} color="#fff" />
             </View>
@@ -31,8 +33,9 @@ export default function HomeScreen() {
               <Text className="mt-0.5 text-xs font-semibold text-muted">Your journey, made simpler.</Text>
             </View>
           </View>
-          <Pressable accessibilityLabel="Notifications and more" onPress={() => router.push("/(tabs)/more")} style={{ borderColor: c.border }} className="h-11 w-11 items-center justify-center rounded-full border bg-surface">
-            <MaterialIcons name="notifications-none" size={23} color={c.foreground} />
+          </View>
+          <Pressable accessibilityLabel="Open profile" onPress={() => router.push("/(tabs)/profile")} style={{ borderColor: c.border, backgroundColor: c.primarySoft }} className="h-11 w-11 items-center justify-center rounded-full border">
+            <MaterialIcons name="person" size={24} color={c.primary} />
           </Pressable>
         </View>
 
