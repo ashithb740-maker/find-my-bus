@@ -28,7 +28,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const frameRef = useRef<any>(null);
   const selected = buses.find((bus) => bus.id === selectedBusId) ?? buses[0];
   const stopData = STOPS.map((stop) => ({ id: stop.id, name: stop.name, lat: stop.latitude, lng: stop.longitude }));
-  const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames ?? []);
+  const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : selected && /lalbagh/i.test(selected.currentStop) ? ["Lalbagh", "KPT", "Nanthoor", "Kankanady", "Padil"] : []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
   const routeData = orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ name: stop.name, lat: stop.latitude, lng: stop.longitude }));
   const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));
