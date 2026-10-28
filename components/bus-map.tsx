@@ -28,7 +28,8 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const frameRef = useRef<any>(null);
   const selected = buses.find((bus) => bus.id === selectedBusId) ?? buses[0];
   const stopData = STOPS.map((stop) => ({ id: stop.id, name: stop.name, lat: stop.latitude, lng: stop.longitude }));
-  const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : selected && /lalbagh/i.test(selected.currentStop) ? ["Lalbagh", "KPT", "Nanthoor", "Kankanady", "Padil"] : []);
+  const isLalbaghPadilBus = !!selected && (/lalbagh/i.test(selected.currentStop) || /KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
+  const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? ["Lalbagh", "KPT", "Nanthoor", "Kankanady", "Padil"] : []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
   const routeData = orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ name: stop.name, lat: stop.latitude, lng: stop.longitude }));
   const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));
@@ -91,7 +92,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
      if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)throw new Error('No road geometry');
      const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
-     L.polyline(coords,{color:'#e53935',weight:6,opacity:.98,lineJoin:'round',lineCap:'round'}).addTo(map);
+     L.polyline(coords,{color:'#07875f',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
      // OSRM returns the actual snapped road-network waypoint for each requested stop.
      // Use those exact coordinates for markers so they sit on the routed path.
      const waypoints=(data.waypoints||[]).map(function(w){return w.location;});
