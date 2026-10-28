@@ -47,7 +47,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
       "pumpwell": { name: "Pumpwell", lat: 12.86250, lng: 74.87050 },
       "padil": { name: "Padil", lat: 12.87150, lng: 74.88340 },
     };
-    if (isTargetLalbaghPadilBus || isLalbaghPadilBus) return custom[key] ?? findNamedStop(name) && { name: findNamedStop(name)!.name, lat: findNamedStop(name)!.latitude, lng: findNamedStop(name)!.longitude };
+    if (isTargetLalbaghPadilBus || isLalbaghPadilBus) { const customStop = custom[key]; if (customStop) return customStop; const fallbackStop = findNamedStop(name); return fallbackStop ? { name: fallbackStop.name, lat: fallbackStop.latitude, lng: fallbackStop.longitude } : null; }
     const stop = findNamedStop(name);
     return stop ? { name: stop.name, lat: stop.latitude, lng: stop.longitude } : null;
   }).filter((stop): stop is { name: string; lat: number; lng: number } => Boolean(stop));
