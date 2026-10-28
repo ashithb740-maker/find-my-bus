@@ -43,7 +43,7 @@ export default function BusDetailScreen() {
   const route = getRoute(bus.routeId);
   const routeStops = (Array.isArray(route?.stopIds) ? route.stopIds : []).map((stopId) => getStop(stopId)).filter(Boolean) as { id: string; name: string }[];
   const isLalbaghPadilRoute = /lalbagh/i.test(bus.currentStop) || /lalbagh/i.test(bus.routeName ?? "") || /61k/i.test(bus.id);
-  const displayRouteStops = routeStopNames.length ? routeStopNames : route?.stopNames?.length ? route.stopNames : isLalbaghPadilRoute ? ["Lalbagh", "KPT", "Nanthoor", "Kankanady", "Padil"] : [];
+  const displayRouteStops = routeStopNames.length ? routeStopNames : route?.stopNames?.length ? route.stopNames : isLalbaghPadilRoute ? ["Lalbagh", "Bejai Circle", "KPT", "Minto Circle", "Kankanady", "Padil"] : [];
   const displayRouteLabel = route?.label || (isLalbaghPadilRoute ? "Lalbagh → Padil" : "");
   const saved = savedBuses.includes(bus.id);
   const progress = Math.round((Number.isFinite(bus.progress) ? bus.progress : 0) * 100);
