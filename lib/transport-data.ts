@@ -38,7 +38,7 @@ export const STOPS: Stop[] = [
   { id:"bantwal",name:"Bantwal",area:"Dakshina Kannada",latitude:12.8905,longitude:75.034,facilities:["Shelter","Parking"] },
   { id:"bc-road",name:"BC Road",area:"Dakshina Kannada",latitude:12.914,longitude:75.018,facilities:["Shelter","Information"] },
   { id:"bejai",name:"Bejai",area:"Mangaluru",latitude:12.899,longitude:74.851,facilities:["Shelter","Lighting"] },
-  { id:"lalbagh",name:"Lalbagh",area:"Mangaluru",latitude:12.888,longitude:74.842,facilities:["Shelter","Park"] },
+  { id:"lalbagh",name:"Lalbagh (KSRTC Bus Stand)",area:"Mangaluru",latitude:12.88524,longitude:74.84168,facilities:["Shelter","Bus station"] },
   { id:"kadri",name:"Kadri",area:"Mangaluru",latitude:12.882,longitude:74.859,facilities:["Shelter","Lighting"] },
   { id:"bendoorwell",name:"Bendoorwell",area:"Mangaluru",latitude:12.88,longitude:74.848,facilities:["Shelter"] },
   { id:"kavoor",name:"Kavoor",area:"North Mangaluru",latitude:12.93,longitude:74.87,facilities:["Shelter","Parking"] },
