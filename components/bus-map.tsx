@@ -37,7 +37,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
     return `<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:var(--bus-size,48px);height:var(--bus-size,48px);border-radius:calc(var(--bus-size,48px)*.33);background:#087f9b;border:2px solid #fff;box-shadow:0 2px 9px #2348;line-height:1;box-sizing:border-box}.bus-emoji svg{width:72%;height:72%;display:block}.stop-emoji{display:block;width:16px;height:16px;border-radius:50%;background:#00a86b;border:3px solid #ffffff;box-shadow:0 0 0 2px #007a4d,0 2px 7px #0008;box-sizing:border-box}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
+<style>html,body,#map{height:100%;width:100%;margin:0;padding:0;background:#eaf0ed;font-family:Arial,sans-serif}.leaflet-container{font:12px Arial,sans-serif}.bus-emoji{display:flex;align-items:center;justify-content:center;width:var(--bus-size,48px);height:var(--bus-size,48px);border-radius:calc(var(--bus-size,48px)*.33);background:#087f9b;border:2px solid #fff;box-shadow:0 2px 9px #2348;line-height:1;box-sizing:border-box}.bus-emoji svg{width:72%;height:72%;display:block}.stop-emoji{display:block;width:16px;height:16px;border-radius:50%;background:#006b45;border:3px solid #ffffff;box-shadow:0 0 0 2px #004b32,0 2px 7px #0008;box-sizing:border-box}.map-tag{background:#fff;border-radius:18px;padding:7px 10px;color:#087451;font-weight:800;box-shadow:0 1px 5px #0002}.leaflet-control-attribution{font-size:9px!important}</style>
 </head><body><div id="map"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -91,7 +91,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
      if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)throw new Error('No road geometry');
      const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
-     L.polyline(coords,{color:'#07875f',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
+     L.polyline(coords,{color:'#e53935',weight:6,opacity:.98,lineJoin:'round',lineCap:'round'}).addTo(map);
      // OSRM returns the actual snapped road-network waypoint for each requested stop.
      // Use those exact coordinates for markers so they sit on the routed path.
      const waypoints=(data.waypoints||[]).map(function(w){return w.location;});
