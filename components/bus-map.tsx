@@ -48,7 +48,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
  const fallback=[${DEMO_CENTER.latitude},${DEMO_CENTER.longitude}];
  const center=buses.length?[buses[0].lat,buses[0].lng]:fallback;
  const map=L.map('map',{zoomControl:true}).setView(center,11);
- L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,maxNativeZoom:19,subdomains:'abc',updateWhenZooming:false,updateWhenIdle:true,keepBuffer:4,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
  const tag=L.control({position:'topleft'});
  tag.onAdd=function(){const d=L.DomUtil.create('div','map-tag');d.textContent='FIND MY BUS · OPENSTREETMAP';return d};tag.addTo(map);
  const locate=L.control({position:'topright'});
@@ -87,15 +87,17 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    map.on('zoomend',refreshBusIcons);
  };
  if(route.length>1){
-   const roadUrl='https://router.project-osrm.org/route/v1/driving/'+route.map(function(s){return s.lng+','+s.lat}).join(';')+'?overview=full&geometries=geojson&steps=false';
+   const roadUrl='https://router.project-osrm.org/route/v1/driving/'+route.map(function(s){return s.lng+','+s.lat}).join(';')+'?overview=full&geometries=geojson&steps=false&alternatives=false&continue_straight=true';
    fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
      if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)throw new Error('No road geometry');
      const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
      L.polyline(coords,{color:'#07875f',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
      // OSRM returns the actual snapped road-network waypoint for each requested stop.
      // Use those exact coordinates for markers so they sit on the routed path.
-     const snapped=(data.waypoints||[]).map(function(w){return w.location;});
-     addStopMarkers(snapped.length===route.length?snapped:null);
+     const waypoints=(data.waypoints||[]).map(function(w){return w.location;});
+     const snapped=waypoints.length===route.length?waypoints:null;
+     // Draw the stop markers at the same snapped road coordinates used by OSRM.
+     addStopMarkers(snapped);
    }).catch(function(){
      const coords=route.map(function(s){return [s.lat,s.lng]});
      // If the routing service fails, do not pretend a straight stop-to-stop line follows roads.
