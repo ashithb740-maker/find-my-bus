@@ -29,7 +29,8 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const selected = buses.find((bus) => bus.id === selectedBusId) ?? buses[0];
   const stopData = STOPS.map((stop) => ({ id: stop.id, name: stop.name, lat: stop.latitude, lng: stop.longitude }));
   const isLalbaghPadilBus = !!selected && (/lalbagh/i.test(selected.currentStop) || /KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
-  const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? ["Lalbagh", "Bejai Circle", "KPT", "Minto Circle", "Kankanady", "Padil"] : []);
+  const isTargetLalbaghPadilBus = !!selected && (/KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
+  const routeNames = isTargetLalbaghPadilBus ? ["Lalbagh", "Bejai Circle", "KPT", "Minto Circle", "Kankanady", "Padil"] : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? ["Lalbagh", "Bejai Circle", "KPT", "Minto Circle", "Kankanady", "Padil"] : []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
   const routeData = orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ name: stop.name, lat: stop.latitude, lng: stop.longitude }));
   const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));
@@ -59,7 +60,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    route.forEach(function(s,i){
      const pos=snappedCoords&&snappedCoords[i]?[snappedCoords[i][1],snappedCoords[i][0]]:[s.lat,s.lng];
      const icon=L.divIcon({className:'',html:'<div class="stop-emoji"></div>',iconSize:[16,16],iconAnchor:[8,8]});
-     L.marker(pos,{icon,zIndexOffset:5000,keyboard:true}).bindTooltip((i===0?'START · ':i===route.length-1?'DESTINATION · ':'STOP · ')+s.name,{permanent:true,direction:'top',offset:[0,-12],className:'route-stop-label'}).addTo(map);
+     L.marker(pos,{icon,zIndexOffset:5000,keyboard:true}).bindTooltip(s.name,{permanent:false,direction:'top',offset:[0,-12],sticky:true,opacity:0.98,className:'route-stop-label'}).addTo(map);
    });
  };
   const busMarkers=[];
