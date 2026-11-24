@@ -30,7 +30,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const stopData = STOPS.map((stop) => ({ id: stop.id, name: stop.name, lat: stop.latitude, lng: stop.longitude }));
   const isLalbaghPadilBus = !!selected && (/lalbagh/i.test(selected.currentStop) || /KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
   const isTargetLalbaghPadilBus = !!selected && (/KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
-  const routeNames = isTargetLalbaghPadilBus ? ["Lalbagh (KSRTC Bus Stand)", "Bejai Circle", "KPT", "Nanthoor", "Kankanady", "Padil"] : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? ["Lalbagh (KSRTC Bus Stand)", "Bejai Circle", "KPT", "Nanthoor", "Kankanady", "Padil"] : []);
+  const routeNames = isTargetLalbaghPadilBus ? ["Lalbagh (KSRTC Bus Stand)", "Bejai Circle", "KPT", "Nanthoor", "Balmata", "Lower Bendoor Road", "Kankanady", "Padil"] : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? ["Lalbagh (KSRTC Bus Stand)", "Bejai Circle", "KPT", "Nanthoor", "Kankanady", "Padil"] : []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
   const routeData = orderedNames.map((name) => {
     // Route-specific landmarks/road corridor for the Lalbagh–Padil service.
@@ -41,8 +41,10 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
       "lalbagh (ksrtc bus stand)": { name: "Lalbagh KSRTC Bus Stand", lat: 12.88470, lng: 74.84170 },
       "bejai circle": { name: "Bejai Circle", lat: 12.89120, lng: 74.84970 },
       "kpt": { name: "KPT · Basaveshwara Circle", lat: 12.89135, lng: 74.85320 },
-      "nanthoor": { name: "Nanthoor", lat: 12.88477, lng: 74.86077 },
-      "lower bendoor road": { name: "Lower Bendoor Road", lat: 12.87590, lng: 74.85820 },
+      "nanthoor": { name: "Nanthoor", lat: 12.8738, lng: 74.8636 },
+      "balmata": { name: "Balmata", lat: 12.874493, lng: 74.854233 },
+      "lower bendoor road": { name: "Lower Bendoor Road", lat: 12.8708, lng: 74.8572 },
+      "kankanady": { name: "Kankanady", lat: 12.8667, lng: 74.8570 },
       "kankanady bypass": { name: "Kankanady Bypass", lat: 12.86960, lng: 74.86360 },
       "pumpwell": { name: "Pumpwell", lat: 12.86250, lng: 74.87050 },
       "padil": { name: "Padil", lat: 12.87150, lng: 74.88340 },
