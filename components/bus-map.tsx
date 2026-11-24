@@ -107,21 +107,32 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    map.on('zoomend',refreshBusIcons);
  };
  if(route.length>1){
-   const roadUrl='https://router.project-osrm.org/route/v1/driving/'+route.map(function(s){return s.lng+','+s.lat}).join(';')+'?overview=full&geometries=geojson&steps=false&alternatives=false&continue_straight=true';
-   fetch(roadUrl).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
-     if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry)throw new Error('No road geometry');
-     const coords=data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]});
-     L.polyline(coords,{color:'#07875f',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
-     // OSRM returns the actual snapped road-network waypoint for each requested stop.
-     // Use those exact coordinates for markers so they sit on the routed path.
-     const waypoints=(data.waypoints||[]).map(function(w){return w.location;});
-     const snapped=waypoints.length===route.length?waypoints:null;
-     // Draw the stop markers at the same snapped road coordinates used by OSRM.
+   // Route each consecutive stop pair independently. This preserves the exact
+   // stop order and prevents the routing engine from choosing a different
+   // waypoint sequence for the whole journey.
+   const routeLeg=function(from,to){
+     const url='https://router.project-osrm.org/route/v1/driving/'+from.lng+','+from.lat+';'+to.lng+','+to.lat+'?overview=full&geometries=geojson&steps=false&alternatives=false';
+     return fetch(url).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
+       if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry||!data.waypoints||data.waypoints.length!==2)throw new Error('No road geometry for '+from.name+' → '+to.name);
+       return {coordinates:data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]}),start:data.waypoints[0].location,end:data.waypoints[1].location};
+     });
+   };
+   Promise.all(route.slice(0,-1).map(function(stop,index){return routeLeg(stop,route[index+1])})).then(function(legs){
+     const snapped=[legs[0].start];
+     legs.forEach(function(leg,index){
+       L.polyline(leg.coordinates,{color:'#07875f',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
+       snapped.push(leg.end);
+     });
      addStopMarkers(snapped);
-   }).catch(function(){
-     const coords=route.map(function(s){return [s.lat,s.lng]});
-     // If the routing service fails, do not pretend a straight stop-to-stop line follows roads.
+     const roadPoints=legs.reduce(function(all,leg){return all.concat(leg.coordinates)},[]);
+     if(roadPoints.length>1)map.fitBounds(L.latLngBounds(roadPoints).pad(.12),{maxZoom:16});
+   }).catch(function(error){
+     // Never draw a misleading straight line when road routing fails.
      addStopMarkers(null);
+     const notice=L.control({position:'bottomleft'});
+     notice.onAdd=function(){const el=L.DomUtil.create('div','map-tag');el.textContent='Road route temporarily unavailable';return el};
+     notice.addTo(map);
+     console.warn('Find My Bus road routing failed:',error);
    });
  }else{addStopMarkers([]);}
  addBusMarkers();
