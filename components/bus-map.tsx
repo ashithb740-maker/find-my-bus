@@ -30,25 +30,25 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const stopData = STOPS.map((stop) => ({ id: stop.id, name: stop.name, lat: stop.latitude, lng: stop.longitude }));
   const isLalbaghPadilBus = !!selected && (/lalbagh/i.test(selected.currentStop) || /KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
   const isTargetLalbaghPadilBus = !!selected && (/KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
-  const routeNames = isTargetLalbaghPadilBus ? ["Lalbagh (KSRTC Bus Stand)", "Bejai Circle", "KPT", "Nanthoor", "Balmata", "Lower Bendoor Road", "Kankanady", "Padil"] : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? ["Lalbagh (KSRTC Bus Stand)", "Bejai Circle", "KPT", "Nanthoor", "Kankanady", "Padil"] : []);
+  const targetRouteStops = ["Lalbagh", "Kadri Park", "KPT", "Nanthoor", "Mallikatte", "Bendoor", "Kankanady", "Pumpwell", "Padil"];
+  const routeNames = isTargetLalbaghPadilBus ? targetRouteStops : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? targetRouteStops : []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
-  // For bus 61K, deliberately hide the old route and stop pins until the user supplies a fresh hand-drawn route.
-  const routeData = isTargetLalbaghPadilBus ? [] : orderedNames.map((name) => {
+  // Route-specific stop positions for 61K, following the user's marked-dot order.
+  const routeData = orderedNames.map((name) => {
     // Route-specific landmarks/road corridor for the Lalbagh–Padil service.
     // These positions are kept separate from the general stop catalogue.
     const key = name.toLowerCase();
     const custom: Record<string, { name: string; lat: number; lng: number }> = {
-      "lalbagh": { name: "Lalbagh KSRTC Bus Stand", lat: 12.88470, lng: 74.84170 },
-      "lalbagh (ksrtc bus stand)": { name: "Lalbagh KSRTC Bus Stand", lat: 12.88470, lng: 74.84170 },
-      "bejai circle": { name: "Bejai Circle", lat: 12.89120, lng: 74.84970 },
-      "kpt": { name: "KPT · Basaveshwara Circle", lat: 12.89135, lng: 74.85320 },
+      "lalbagh": { name: "Lalbagh", lat: 12.88524, lng: 74.84168 },
+      "lalbagh (ksrtc bus stand)": { name: "Lalbagh", lat: 12.88524, lng: 74.84168 },
+      "kadri park": { name: "Kadri Park", lat: 12.8820, lng: 74.8590 },
+      "kpt": { name: "KPT", lat: 12.8946, lng: 74.8564 },
       "nanthoor": { name: "Nanthoor", lat: 12.8738, lng: 74.8636 },
-      "balmata": { name: "Balmata", lat: 12.874493, lng: 74.854233 },
-      "lower bendoor road": { name: "Lower Bendoor Road", lat: 12.8708, lng: 74.8572 },
-      "kankanady": { name: "Kankanady", lat: 12.8667, lng: 74.8570 },
-      "kankanady bypass": { name: "Kankanady Bypass", lat: 12.86960, lng: 74.86360 },
-      "pumpwell": { name: "Pumpwell", lat: 12.86250, lng: 74.87050 },
-      "padil": { name: "Padil", lat: 12.87150, lng: 74.88340 },
+      "mallikatte": { name: "Mallikatte", lat: 12.8764, lng: 74.8586 },
+      "bendoor": { name: "Bendoor", lat: 12.8800, lng: 74.8480 },
+      "kankanady": { name: "Kankanady", lat: 12.8610, lng: 74.8550 },
+      "pumpwell": { name: "Pumpwell", lat: 12.8548, lng: 74.8604 },
+      "padil": { name: "Padil", lat: 12.8468, lng: 74.8746 },
     };
     if (isTargetLalbaghPadilBus || isLalbaghPadilBus) { const customStop = custom[key]; if (customStop) return customStop; const fallbackStop = findNamedStop(name); return fallbackStop ? { name: fallbackStop.name, lat: fallbackStop.latitude, lng: fallbackStop.longitude } : null; }
     const stop = findNamedStop(name);
