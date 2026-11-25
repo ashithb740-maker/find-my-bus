@@ -10,7 +10,27 @@ export function AppStateProvider({children}:{children:React.ReactNode}){
  useEffect(()=>{let active=true;const load=async()=>{let localHasData=false;try{const s=await AsyncStorage.getItem(KEY);if(s){const p=JSON.parse(s);localHasData=(p.routes?.length??0)>0||(p.trips?.length??0)>0||(p.buses?.length??0)>0;if(!active)return;setSavedBuses(p.savedBuses??[]);setSavedRoutes(p.savedRoutes??[]);setSavedStops(p.savedStops??[]);setAlerts(p.alerts??[]);setOffline(!!p.isOffline);setDemoLocation(p.demoLocation!==false);setRoutes(p.routes??[]);setTrips(p.trips??[]);setBuses((p.buses??[]).map((b:BusSeed)=>hydrateBus(b)));}}catch{}finally{if(active)setHydrated(true);}try{const response=await fetch(`${API_BASE_URL}/api/transport`,{headers:{Accept:"application/json"}});if(response.ok){const remote=await response.json();if(active&&remote?.exists===true&&Array.isArray(remote.routes)&&Array.isArray(remote.trips)&&Array.isArray(remote.buses)){const remoteHasData=remote.routes.length>0||remote.trips.length>0||remote.buses.length>0;if(remoteHasData||!localHasData){setRoutes(remote.routes);setTrips(remote.trips);setBuses(remote.buses.map((b:BusSeed)=>hydrateBus(b)));}}}}catch{}finally{if(active)setRemoteReady(true);}};void load();return()=>{active=false;}},[]);
  useEffect(()=>{const t=setInterval(()=>{if(!isOffline&&demoLocation)setBuses(c=>c.map(advanceBus));},4000);return()=>clearInterval(t)},[isOffline,demoLocation]);
  useEffect(()=>{if(!hydrated)return;const snapshot={savedBuses,savedRoutes,savedStops,alerts,isOffline,demoLocation,routes,trips,buses:buses.map(({latitude,longitude,currentStop,nextStop,eta,speed,heading,lastUpdated,...seed})=>seed)};AsyncStorage.setItem(KEY,JSON.stringify(snapshot)).catch(()=>{});if(remoteReady){fetch(`${API_BASE_URL}/api/transport`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({routes,trips,buses:snapshot.buses})}).catch(()=>{});}},[savedBuses,savedRoutes,savedStops,alerts,isOffline,demoLocation,routes,trips,buses,hydrated,remoteReady]);
- const updateBusTelemetry=useCallback((id:string,p:{latitude:number;longitude:number;speed:number;heading:number})=>setBuses(c=>c.map(b=>b.id===id?{...b,...p,progress:progressFromCoordinates(b.stopNames,p.latitude,p.longitude),lastUpdated:Date.now()}:b)),[]);
+ const updateBusTelemetry=useCallback((id:string,p:{latitude:number;longitude:number;speed:number;heading:number})=>setBuses(current=>current.map(bus=>{
+  if(bus.id!==id)return bus;
+  const route=routes.find(item=>item.id===bus.routeId);
+  let ordered=route?.routeStops?.length?route.routeStops.map(stop=>({name:stop.name,latitude:Number(stop.latitude),longitude:Number(stop.longitude)})).filter(stop=>Number.isFinite(stop.latitude)&&Number.isFinite(stop.longitude)):[];
+  if(!ordered.length&&bus.stopNames?.length){const names=bus.direction==="REVERSE"?[...bus.stopNames].reverse():bus.stopNames;const aliases:Record<string,string>={"lalbagh (ksrtc bus stand)":"lalbagh","kadri park":"kadri","nanthoor":"nanthoor","kpt":"kpt","mallikatte":"mallikatte","bendoor":"bendoorwell","kankanady":"kankanady","pumpwell":"pumpwell","padil":"padil"};ordered=names.map(name=>{const normalized=name.trim().toLowerCase();const stop=STOPS.find(item=>item.name.toLowerCase()===normalized||item.id===normalized.replace(/[^a-z0-9]+/g,"-")||item.id===aliases[normalized]);return stop?{name,latitude:stop.latitude,longitude:stop.longitude}:null}).filter((stop):stop is {name:string;latitude:number;longitude:number}=>!!stop);}
+  if(bus.direction==="REVERSE"&&route?.routeStops?.length)ordered=[...ordered].reverse();
+  let progress=progressFromCoordinates(bus.stopNames,p.latitude,p.longitude),currentStop=bus.currentStop,nextStop=bus.nextStop;
+  if(ordered.length>=2){
+    const latScale=111320,lonScale=111320*Math.cos(p.latitude*Math.PI/180);let best=Infinity,bestIndex=0,bestLocal=0;
+    for(let i=0;i<ordered.length-1;i++){const a=ordered[i],b=ordered[i+1],ax=(a.longitude-p.longitude)*lonScale,ay=(a.latitude-p.latitude)*latScale,bx=(b.longitude-p.longitude)*lonScale,by=(b.latitude-p.latitude)*latScale,dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,-(ax*dx+ay*dy)/len)),dist=(ax+t*dx)**2+(ay+t*dy)**2;if(dist<best){best=dist;bestIndex=i;bestLocal=t;}}
+    progress=Math.max(0,Math.min(.999,(bestIndex+bestLocal)/(ordered.length-1)));
+    currentStop=ordered[bestIndex].name;nextStop=ordered[Math.min(bestIndex+1,ordered.length-1)].name;
+  }else if(bus.stopNames?.length){
+    const names=bus.direction==="REVERSE"?[...bus.stopNames].reverse():bus.stopNames;
+    const segment=Math.min(Math.floor(progress*Math.max(1,names.length-1)),names.length-2);
+    currentStop=names[Math.max(0,segment)]??bus.currentStop;nextStop=names[Math.min(names.length-1,Math.max(0,segment)+1)]??bus.nextStop;
+  }
+  const remainingStops=ordered.length?Math.max(0,ordered.length-1-Math.floor(progress*(ordered.length-1))):1;
+  const eta=Math.max(1,Math.round(remainingStops*4+Math.max(0,1-(progress*(ordered.length-1)%1))*3));
+  return {...bus,...p,progress,currentStop,nextStop,eta,lastUpdated:Date.now()};
+})),[routes]);
  const value=useMemo<AppStateValue>(()=>({buses,routes,trips,savedBuses,savedRoutes,savedStops,alerts,isOffline,demoLocation,
  toggleSaved:(k,id)=>{const s=k==="bus"?setSavedBuses:k==="route"?setSavedRoutes:setSavedStops;s(c=>c.includes(id)?c.filter(x=>x!==id):[...c,id]);},
  addAlert:(busId,stopName)=>setAlerts(c=>c.some(x=>x.busId===busId&&x.stopName===stopName)?c:[...c,{id:`${busId}-${stopName}`,busId,stopName,threshold:5,enabled:true}]),
