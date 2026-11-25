@@ -23,7 +23,7 @@ function findNamedStop(name: string) {
   );
 }
 
-function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void; routeStopNames?: string[] }) {
+function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames, routePath, routeStops }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void; routeStopNames?: string[]; routePath?: {latitude:number;longitude:number}[]; routeStops?: {name:string;latitude:number;longitude:number}[] }) {
   const colors = useColors();
   const frameRef = useRef<any>(null);
   const selected = buses.find((bus) => bus.id === selectedBusId) ?? buses[0];
@@ -33,30 +33,8 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const targetRouteStops = ["Lalbagh", "Kadri Park", "KPT", "Nanthoor", "Mallikatte", "Bendoor", "Kankanady", "Pumpwell", "Padil"];
   const routeNames = isTargetLalbaghPadilBus ? targetRouteStops : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? targetRouteStops : []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
-  // Manually digitized from the user's supplied OpenStreetMap screenshot.
-  // These are deliberately fixed map points: no name geocoding and no OSRM rerouting.
-  const manual61KStops = [
-    { name: "Lalbagh", lat: 12.88524, lng: 74.84168 },
-    { name: "Kadri Park", lat: 12.89018, lng: 74.85415 },
-    { name: "KPT", lat: 12.89406, lng: 74.85697 },
-    { name: "Nanthoor", lat: 12.88300, lng: 74.86838 },
-    { name: "Mallikatte", lat: 12.87724, lng: 74.86344 },
-    { name: "Bendoor", lat: 12.87159, lng: 74.86027 },
-    { name: "Kankanady", lat: 12.86536, lng: 74.86262 },
-    { name: "Pumpwell", lat: 12.86477, lng: 74.87062 },
-    { name: "Padil", lat: 12.86724, lng: 74.89691 },
-  ];
-  const manual61KLine = [
-    [12.88524,74.84168],[12.88555,74.84520],[12.88610,74.84920],[12.88800,74.85180],
-    [12.89018,74.85415],[12.89220,74.85540],[12.89406,74.85697],[12.89280,74.86000],
-    [12.89080,74.86310],[12.88800,74.86560],[12.88300,74.86838],[12.88080,74.86620],
-    [12.87724,74.86344],[12.87400,74.86120],[12.87159,74.86027],[12.86980,74.86140],
-    [12.86730,74.86210],[12.86536,74.86262],[12.86490,74.86600],[12.86477,74.87062],
-    [12.86540,74.87800],[12.86620,74.88600],[12.86724,74.89691]
-  ];
-  const routeData = isTargetLalbaghPadilBus
-    ? manual61KStops
-    : orderedNames.map((name) => { const stop = findNamedStop(name); return stop ? { name: stop.name, lat: stop.latitude, lng: stop.longitude } : null; }).filter((stop): stop is { name: string; lat: number; lng: number } => Boolean(stop));
+  const routeData = (routeStops?.length ? routeStops.map(s=>({name:s.name,lat:s.latitude,lng:s.longitude})) : orderedNames.map((name) => { const stop = findNamedStop(name); return stop ? { name: stop.name, lat: stop.latitude, lng: stop.longitude } : null; }).filter((stop): stop is { name: string; lat: number; lng: number } => Boolean(stop)));
+  const lineData = routePath?.length ? routePath.map(p=>[p.latitude,p.longitude]) : routeData.map(s=>[s.lat,s.lng]);
   const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));
   const mapHtml = useMemo(() => {
     const safeJson = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c");
@@ -70,7 +48,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
 (function(){
  const stops=${safeJson(stopData)};
  const buses=${safeJson(busData)};
- const route=${safeJson(routeData)};
+ const route=${safeJson(routeData)};\n const line=${safeJson(lineData)};
  const fallback=[${DEMO_CENTER.latitude},${DEMO_CENTER.longitude}];
  const center=buses.length?[buses[0].lat,buses[0].lng]:fallback;
  const map=L.map('map',{zoomControl:true}).setView(center,11);
@@ -112,26 +90,17 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    });
    map.on('zoomend',refreshBusIcons);
  };
- if(route.length>1){
-   if(true && false){} // keep the manual route branch explicit below
-   if(true && route.length===9 && route[0].name==='Lalbagh'){
-     const line=[[12.88524,74.84168],[12.88555,74.8452],[12.8861,74.8492],[12.888,74.8518],[12.89018,74.85415],[12.8922,74.8554],[12.89406,74.85697],[12.8928,74.86],[12.8908,74.8631],[12.888,74.8656],[12.883,74.86838],[12.8808,74.8662],[12.87724,74.86344],[12.874,74.8612],[12.87159,74.86027],[12.8698,74.8614],[12.8673,74.8621],[12.86536,74.86262],[12.8649,74.866],[12.86477,74.87062],[12.8654,74.878],[12.8662,74.886],[12.86724,74.89691]];
-     L.polyline(line,{color:'#078fa8',weight:6,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(map);
-     addStopMarkers(route.map(function(s){return [s.lng,s.lat]}));
-     map.fitBounds(L.latLngBounds(line).pad(.12),{maxZoom:16});
-   } else {
-     const points=route.map(function(s){return [s.lat,s.lng]});
-     L.polyline(points,{color:'#078fa8',weight:6,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(map);
-     addStopMarkers(route.map(function(s){return [s.lng,s.lat]}));
-     map.fitBounds(L.latLngBounds(points).pad(.12),{maxZoom:16});
-   }
+ if(line.length>1){
+   L.polyline(line,{color:'#078fa8',weight:6,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(map);
+   addStopMarkers(route.map(function(s){return [s.lng,s.lat]}));
+   map.fitBounds(L.latLngBounds(line).pad(.12),{maxZoom:16});
  }else{addStopMarkers([]);}
  addBusMarkers();
  if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));map.fitBounds(bounds.pad(.18),{maxZoom:15})}else if(buses.length){map.setView([buses[0].lat,buses[0].lng],13)}
  setTimeout(function(){map.invalidateSize()},200);
 })();
 </script></body></html>`;
-  }, [JSON.stringify(stopData), JSON.stringify(routeData)]);
+  }, [JSON.stringify(stopData), JSON.stringify(routeData), JSON.stringify(lineData)]);
   useEffect(() => {
     if (Platform.OS !== "web" || !frameRef.current?.contentWindow) return;
     frameRef.current.contentWindow.postMessage({ type: "find-my-bus-update", buses: busData }, "*");
@@ -152,7 +121,7 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   </View>;
 }
 
-export function BusMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void; routeStopNames?: string[] }) {
+export function BusMap({ buses, selectedBusId, onSelectBus, routeStopNames, routePath, routeStops }: { buses: LiveBus[]; selectedBusId?: string; onSelectBus?: (id: string) => void; routeStopNames?: string[]; routePath?: {latitude:number;longitude:number}[]; routeStops?: {name:string;latitude:number;longitude:number}[] }) {
   const colors = useColors();
   const mapRef = useRef<any>(null);
   const native = useMemo(() => {
@@ -162,7 +131,7 @@ export function BusMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { 
       return require("react-native-maps");
     } catch { return null; }
   }, []);
-  if (Platform.OS === "web" || !native) return <WebMap buses={buses} selectedBusId={selectedBusId} onSelectBus={onSelectBus} routeStopNames={routeStopNames} />;
+  if (Platform.OS === "web" || !native) return <WebMap buses={buses} selectedBusId={selectedBusId} onSelectBus={onSelectBus} routeStopNames={routeStopNames} routePath={routePath} routeStops={routeStops} />;
   const MapView = native.default;
   const Marker = native.Marker;
   const PolylineNative = native.Polyline;
@@ -170,8 +139,8 @@ export function BusMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { 
   const isTargetLalbaghPadilBus = !!selected && (/KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
   const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames ?? []);
   const orderedNames = selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
-  const coordinates = isTargetLalbaghPadilBus ? [] : orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ latitude: stop.latitude, longitude: stop.longitude }));
-  return <View style={styles.nativeMap}><MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={{ ...DEMO_CENTER, latitudeDelta: 0.32, longitudeDelta: 0.32 }} showsUserLocation={false}>{!isTargetLalbaghPadilBus ? <>{coordinates.length > 1 ? <PolylineNative coordinates={coordinates} strokeColor={colors.primary} strokeWidth={5} /> : null}{STOPS.map((stop) => <Marker key={stop.id} coordinate={{ latitude: stop.latitude, longitude: stop.longitude }} title={stop.name} pinColor={colors.primary} />)}</> : null}{buses.map((bus) => <Marker key={bus.id} coordinate={{ latitude: bus.latitude, longitude: bus.longitude }} title={bus.vehicle || bus.id} description={`${bus.currentStop} → ${bus.nextStop}`} pinColor={bus.id === selectedBusId ? colors.primary : colors.success} onPress={() => onSelectBus?.(bus.id)} />)}</MapView><View pointerEvents="none" className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5"><Text style={{ color: colors.primary }} className="text-[10px] font-extrabold tracking-widest">BUS TRACKING MAP</Text></View></View>;
+  const coordinates = routePath?.length ? routePath.map(p=>({latitude:p.latitude,longitude:p.longitude})) : isTargetLalbaghPadilBus ? [] : orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ latitude: stop.latitude, longitude: stop.longitude }));
+  return <View style={styles.nativeMap}><MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={{ ...DEMO_CENTER, latitudeDelta: 0.32, longitudeDelta: 0.32 }} showsUserLocation={false}>{coordinates.length > 1 ? <PolylineNative coordinates={coordinates} strokeColor={colors.primary} strokeWidth={5} /> : null}{routeStops?.length ? routeStops.map((stop,i)=><Marker key={i} coordinate={{latitude:stop.latitude,longitude:stop.longitude}} title={stop.name} pinColor={colors.primary}/>) : !isTargetLalbaghPadilBus ? STOPS.map((stop) => <Marker key={stop.id} coordinate={{ latitude: stop.latitude, longitude: stop.longitude }} title={stop.name} pinColor={colors.primary} />) : null}{buses.map((bus) => <Marker key={bus.id} coordinate={{ latitude: bus.latitude, longitude: bus.longitude }} title={bus.vehicle || bus.id} description={`${bus.currentStop} → ${bus.nextStop}`} pinColor={bus.id === selectedBusId ? colors.primary : colors.success} onPress={() => onSelectBus?.(bus.id)} />)}</MapView><View pointerEvents="none" className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5"><Text style={{ color: colors.primary }} className="text-[10px] font-extrabold tracking-widest">BUS TRACKING MAP</Text></View></View>;
 }
 
 const styles = StyleSheet.create({ nativeMap: { height: MAP_HEIGHT, overflow: "hidden", borderRadius: 24 } });
