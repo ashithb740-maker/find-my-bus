@@ -2,7 +2,7 @@ export type Stop = {
   id: string; name: string; area: string; latitude: number; longitude: number; facilities: string[];
 };
 export type Route = {
-  id: string; label: string; origin: string; destination: string; stopNames: string[]; stopIds: string[];
+  id: string; label: string; origin: string; destination: string; stopNames: string[]; stopIds: string[]; routePath?: { latitude: number; longitude: number }[]; routeStops?: { name: string; latitude: number; longitude: number }[];
   duration: number; fare: number; frequency: string; firstBus: string; lastBus: string; color: string;
 };
 export type Trip = {
