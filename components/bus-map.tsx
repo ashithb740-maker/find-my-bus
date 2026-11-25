@@ -32,7 +32,8 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const isTargetLalbaghPadilBus = !!selected && (/KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
   const routeNames = isTargetLalbaghPadilBus ? ["Lalbagh (KSRTC Bus Stand)", "Bejai Circle", "KPT", "Nanthoor", "Balmata", "Lower Bendoor Road", "Kankanady", "Padil"] : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? ["Lalbagh (KSRTC Bus Stand)", "Bejai Circle", "KPT", "Nanthoor", "Kankanady", "Padil"] : []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
-  const routeData = orderedNames.map((name) => {
+  // For bus 61K, deliberately hide the old route and stop pins until the user supplies a fresh hand-drawn route.
+  const routeData = isTargetLalbaghPadilBus ? [] : orderedNames.map((name) => {
     // Route-specific landmarks/road corridor for the Lalbagh–Padil service.
     // These positions are kept separate from the general stop catalogue.
     const key = name.toLowerCase();
@@ -178,10 +179,11 @@ export function BusMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { 
   const Marker = native.Marker;
   const PolylineNative = native.Polyline;
   const selected = buses.find((bus) => bus.id === selectedBusId) ?? buses[0];
+  const isTargetLalbaghPadilBus = !!selected && (/KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
   const routeNames = routeStopNames?.length ? routeStopNames : (selected?.stopNames ?? []);
   const orderedNames = selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
-  const coordinates = orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ latitude: stop.latitude, longitude: stop.longitude }));
-  return <View style={styles.nativeMap}><MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={{ ...DEMO_CENTER, latitudeDelta: 0.32, longitudeDelta: 0.32 }} showsUserLocation={false}><PolylineNative coordinates={coordinates} strokeColor={colors.primary} strokeWidth={5} />{STOPS.map((stop) => <Marker key={stop.id} coordinate={{ latitude: stop.latitude, longitude: stop.longitude }} title={stop.name} pinColor={colors.primary} />)}{buses.map((bus) => <Marker key={bus.id} coordinate={{ latitude: bus.latitude, longitude: bus.longitude }} title={bus.vehicle || bus.id} description={`${bus.currentStop} → ${bus.nextStop}`} pinColor={bus.id === selectedBusId ? colors.primary : colors.success} onPress={() => onSelectBus?.(bus.id)} />)}</MapView><View pointerEvents="none" className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5"><Text style={{ color: colors.primary }} className="text-[10px] font-extrabold tracking-widest">BUS TRACKING MAP</Text></View></View>;
+  const coordinates = isTargetLalbaghPadilBus ? [] : orderedNames.map(findNamedStop).filter((stop): stop is NonNullable<typeof stop> => Boolean(stop)).map((stop) => ({ latitude: stop.latitude, longitude: stop.longitude }));
+  return <View style={styles.nativeMap}><MapView ref={mapRef} style={StyleSheet.absoluteFill} initialRegion={{ ...DEMO_CENTER, latitudeDelta: 0.32, longitudeDelta: 0.32 }} showsUserLocation={false}>{!isTargetLalbaghPadilBus ? <>{coordinates.length > 1 ? <PolylineNative coordinates={coordinates} strokeColor={colors.primary} strokeWidth={5} /> : null}{STOPS.map((stop) => <Marker key={stop.id} coordinate={{ latitude: stop.latitude, longitude: stop.longitude }} title={stop.name} pinColor={colors.primary} />)}</> : null}{buses.map((bus) => <Marker key={bus.id} coordinate={{ latitude: bus.latitude, longitude: bus.longitude }} title={bus.vehicle || bus.id} description={`${bus.currentStop} → ${bus.nextStop}`} pinColor={bus.id === selectedBusId ? colors.primary : colors.success} onPress={() => onSelectBus?.(bus.id)} />)}</MapView><View pointerEvents="none" className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1.5"><Text style={{ color: colors.primary }} className="text-[10px] font-extrabold tracking-widest">BUS TRACKING MAP</Text></View></View>;
 }
 
 const styles = StyleSheet.create({ nativeMap: { height: MAP_HEIGHT, overflow: "hidden", borderRadius: 24 } });
