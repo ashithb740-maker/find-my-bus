@@ -33,27 +33,30 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
   const targetRouteStops = ["Lalbagh", "Kadri Park", "KPT", "Nanthoor", "Mallikatte", "Bendoor", "Kankanady", "Pumpwell", "Padil"];
   const routeNames = isTargetLalbaghPadilBus ? targetRouteStops : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? targetRouteStops : []);
   const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
-  // Route-specific stop positions for 61K, following the user's marked-dot order.
-  const routeData = orderedNames.map((name) => {
-    // Route-specific landmarks/road corridor for the Lalbagh–Padil service.
-    // These positions are kept separate from the general stop catalogue.
-    const key = name.toLowerCase();
-    const custom: Record<string, { name: string; lat: number; lng: number }> = {
-      "lalbagh": { name: "Lalbagh", lat: 12.88524, lng: 74.84168 },
-      "lalbagh (ksrtc bus stand)": { name: "Lalbagh", lat: 12.88524, lng: 74.84168 },
-      "kadri park": { name: "Kadri Park", lat: 12.8820, lng: 74.8590 },
-      "kpt": { name: "KPT", lat: 12.8946, lng: 74.8564 },
-      "nanthoor": { name: "Nanthoor", lat: 12.8738, lng: 74.8636 },
-      "mallikatte": { name: "Mallikatte", lat: 12.8764, lng: 74.8586 },
-      "bendoor": { name: "Bendoor", lat: 12.8800, lng: 74.8480 },
-      "kankanady": { name: "Kankanady", lat: 12.8610, lng: 74.8550 },
-      "pumpwell": { name: "Pumpwell", lat: 12.8548, lng: 74.8604 },
-      "padil": { name: "Padil", lat: 12.8468, lng: 74.8746 },
-    };
-    if (isTargetLalbaghPadilBus || isLalbaghPadilBus) { const customStop = custom[key]; if (customStop) return customStop; const fallbackStop = findNamedStop(name); return fallbackStop ? { name: fallbackStop.name, lat: fallbackStop.latitude, lng: fallbackStop.longitude } : null; }
-    const stop = findNamedStop(name);
-    return stop ? { name: stop.name, lat: stop.latitude, lng: stop.longitude } : null;
-  }).filter((stop): stop is { name: string; lat: number; lng: number } => Boolean(stop));
+  // Manually digitized from the user's supplied OpenStreetMap screenshot.
+  // These are deliberately fixed map points: no name geocoding and no OSRM rerouting.
+  const manual61KStops = [
+    { name: "Lalbagh", lat: 12.88524, lng: 74.84168 },
+    { name: "Kadri Park", lat: 12.89018, lng: 74.85415 },
+    { name: "KPT", lat: 12.89406, lng: 74.85697 },
+    { name: "Nanthoor", lat: 12.88300, lng: 74.86838 },
+    { name: "Mallikatte", lat: 12.87724, lng: 74.86344 },
+    { name: "Bendoor", lat: 12.87159, lng: 74.86027 },
+    { name: "Kankanady", lat: 12.86536, lng: 74.86262 },
+    { name: "Pumpwell", lat: 12.86477, lng: 74.87062 },
+    { name: "Padil", lat: 12.86724, lng: 74.89691 },
+  ];
+  const manual61KLine = [
+    [12.88524,74.84168],[12.88555,74.84520],[12.88610,74.84920],[12.88800,74.85180],
+    [12.89018,74.85415],[12.89220,74.85540],[12.89406,74.85697],[12.89280,74.86000],
+    [12.89080,74.86310],[12.88800,74.86560],[12.88300,74.86838],[12.88080,74.86620],
+    [12.87724,74.86344],[12.87400,74.86120],[12.87159,74.86027],[12.86980,74.86140],
+    [12.86730,74.86210],[12.86536,74.86262],[12.86490,74.86600],[12.86477,74.87062],
+    [12.86540,74.87800],[12.86620,74.88600],[12.86724,74.89691]
+  ];
+  const routeData = isTargetLalbaghPadilBus
+    ? manual61KStops
+    : orderedNames.map((name) => { const stop = findNamedStop(name); return stop ? { name: stop.name, lat: stop.latitude, lng: stop.longitude } : null; }).filter((stop): stop is { name: string; lat: number; lng: number } => Boolean(stop));
   const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));
   const mapHtml = useMemo(() => {
     const safeJson = (value: unknown) => JSON.stringify(value).replace(/</g, "\\u003c");
@@ -110,33 +113,18 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames }: { buses: 
    map.on('zoomend',refreshBusIcons);
  };
  if(route.length>1){
-   // Route each consecutive stop pair independently. This preserves the exact
-   // stop order and prevents the routing engine from choosing a different
-   // waypoint sequence for the whole journey.
-   const routeLeg=function(from,to){
-     const url='https://router.project-osrm.org/route/v1/driving/'+from.lng+','+from.lat+';'+to.lng+','+to.lat+'?overview=full&geometries=geojson&steps=false&alternatives=false';
-     return fetch(url).then(function(response){if(!response.ok)throw new Error('Road route unavailable');return response.json()}).then(function(data){
-       if(data.code!=='Ok'||!data.routes||!data.routes[0]||!data.routes[0].geometry||!data.waypoints||data.waypoints.length!==2)throw new Error('No road geometry for '+from.name+' → '+to.name);
-       return {coordinates:data.routes[0].geometry.coordinates.map(function(p){return [p[1],p[0]]}),start:data.waypoints[0].location,end:data.waypoints[1].location};
-     });
-   };
-   Promise.all(route.slice(0,-1).map(function(stop,index){return routeLeg(stop,route[index+1])})).then(function(legs){
-     const snapped=[legs[0].start];
-     legs.forEach(function(leg,index){
-       L.polyline(leg.coordinates,{color:'#07875f',weight:6,opacity:.9,lineJoin:'round',lineCap:'round'}).addTo(map);
-       snapped.push(leg.end);
-     });
-     addStopMarkers(snapped);
-     const roadPoints=legs.reduce(function(all,leg){return all.concat(leg.coordinates)},[]);
-     if(roadPoints.length>1)map.fitBounds(L.latLngBounds(roadPoints).pad(.12),{maxZoom:16});
-   }).catch(function(error){
-     // Never draw a misleading straight line when road routing fails.
-     addStopMarkers(null);
-     const notice=L.control({position:'bottomleft'});
-     notice.onAdd=function(){const el=L.DomUtil.create('div','map-tag');el.textContent='Road route temporarily unavailable';return el};
-     notice.addTo(map);
-     console.warn('Find My Bus road routing failed:',error);
-   });
+   if(true && false){} // keep the manual route branch explicit below
+   if(true && route.length===9 && route[0].name==='Lalbagh'){
+     const line=[[12.88524,74.84168],[12.88555,74.8452],[12.8861,74.8492],[12.888,74.8518],[12.89018,74.85415],[12.8922,74.8554],[12.89406,74.85697],[12.8928,74.86],[12.8908,74.8631],[12.888,74.8656],[12.883,74.86838],[12.8808,74.8662],[12.87724,74.86344],[12.874,74.8612],[12.87159,74.86027],[12.8698,74.8614],[12.8673,74.8621],[12.86536,74.86262],[12.8649,74.866],[12.86477,74.87062],[12.8654,74.878],[12.8662,74.886],[12.86724,74.89691]];
+     L.polyline(line,{color:'#078fa8',weight:6,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(map);
+     addStopMarkers(route.map(function(s){return [s.lng,s.lat]}));
+     map.fitBounds(L.latLngBounds(line).pad(.12),{maxZoom:16});
+   } else {
+     const points=route.map(function(s){return [s.lat,s.lng]});
+     L.polyline(points,{color:'#078fa8',weight:6,opacity:.95,lineJoin:'round',lineCap:'round'}).addTo(map);
+     addStopMarkers(route.map(function(s){return [s.lng,s.lat]}));
+     map.fitBounds(L.latLngBounds(points).pad(.12),{maxZoom:16});
+   }
  }else{addStopMarkers([]);}
  addBusMarkers();
  if(route.length>1){const bounds=L.latLngBounds(route.map(function(s){return [s.lat,s.lng]}));map.fitBounds(bounds.pad(.18),{maxZoom:15})}else if(buses.length){map.setView([buses[0].lat,buses[0].lng],13)}
