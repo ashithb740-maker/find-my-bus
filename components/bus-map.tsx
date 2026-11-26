@@ -31,8 +31,8 @@ function WebMap({ buses, selectedBusId, onSelectBus, routeStopNames, routePath, 
   const isLalbaghPadilBus = !!selected && (/lalbagh/i.test(selected.currentStop) || /KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
   const isTargetLalbaghPadilBus = !!selected && (/KA-19-F-1999|61K/i.test(selected.id) || /lalbagh.*padil/i.test(selected.routeName || ""));
   const targetRouteStops = ["Lalbagh", "Kadri Park", "KPT", "Nanthoor", "Mallikatte", "Bendoor", "Kankanady", "Pumpwell", "Padil"];
-  const routeNames = isTargetLalbaghPadilBus ? targetRouteStops : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? targetRouteStops : []);
-  const orderedNames = routeStopNames?.length ? routeNames : selected?.direction === "REVERSE" ? [...routeNames].reverse() : routeNames;
+  const routeNames = routeStops?.length ? routeStops.map(s=>s.name) : routeStopNames?.length ? routeStopNames : (selected?.stopNames?.length ? selected.stopNames : isLalbaghPadilBus ? targetRouteStops : []);
+  const orderedNames = routeNames;
   const routeData = (routeStops?.length ? routeStops.map(s=>({name:s.name,lat:s.latitude,lng:s.longitude})) : orderedNames.map((name) => { const stop = findNamedStop(name); return stop ? { name: stop.name, lat: stop.latitude, lng: stop.longitude } : null; }).filter((stop): stop is { name: string; lat: number; lng: number } => Boolean(stop)));
   const lineData = routePath?.length ? routePath.map(p=>[p.latitude,p.longitude]) : routeData.map(s=>[s.lat,s.lng]);
   const busData = buses.map((bus) => ({ id: bus.id, vehicle: bus.vehicle || bus.id, lat: bus.latitude, lng: bus.longitude, currentStop: bus.currentStop, nextStop: bus.nextStop, eta: bus.eta, status: bus.status }));

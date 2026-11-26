@@ -44,7 +44,7 @@ export default function BusDetailScreen() {
   const canonicalRouteStops = route?.routeStops?.length ? route.routeStops.map((stop, index) => ({ id: `manual-${index}`, name: stop.name })) : (Array.isArray(route?.stopIds) ? route.stopIds : []).map((stopId) => getStop(stopId)).filter(Boolean) as { id: string; name: string }[];
   const routeStops = bus.direction === "REVERSE" ? [...canonicalRouteStops].reverse() : canonicalRouteStops;
   const isLalbaghPadilRoute = /lalbagh/i.test(bus.currentStop) || /lalbagh/i.test(bus.routeName ?? "") || /61k/i.test(bus.id);
-  const canonicalDisplayStops = routeStopNames.length ? routeStopNames : route?.stopNames?.length ? route.stopNames : isLalbaghPadilRoute ? ["Lalbagh (KSRTC Bus Stand)", "Kadri Park", "KPT", "Nanthoor", "Mallikatte", "Bendoor", "Kankanady", "Pumpwell", "Padil"] : [];
+  const canonicalDisplayStops = route?.routeStops?.length ? route.routeStops.map(stop => stop.name) : routeStopNames.length ? routeStopNames : route?.stopNames?.length ? route.stopNames : isLalbaghPadilRoute ? ["Lalbagh (KSRTC Bus Stand)", "Kadri Park", "KPT", "Nanthoor", "Mallikatte", "Bendoor", "Kankanady", "Pumpwell", "Padil"] : [];
   const displayRouteStops = bus.direction === "REVERSE" ? [...canonicalDisplayStops].reverse() : canonicalDisplayStops;
   const displayRouteLabel = route?.label || (isLalbaghPadilRoute ? "Lalbagh → Padil" : "");
   const saved = savedBuses.includes(bus.id);
