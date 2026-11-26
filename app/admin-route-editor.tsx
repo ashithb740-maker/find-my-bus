@@ -35,7 +35,29 @@ function report(){parent.postMessage({type:'route-editor-data',path,stops,canUnd
 function draw(){line.setLatLngs(path.map(p=>[p.latitude,p.longitude]));layers.clearLayers();stops.forEach((s,i)=>L.circleMarker([s.latitude,s.longitude],{radius:9,color:'#fff',weight:2,fillColor:'#087f52',fillOpacity:1}).bindTooltip(s.name).addTo(layers));path.forEach((p,i)=>L.circleMarker([p.latitude,p.longitude],{radius:4,color:'#fff',weight:1,fillColor:'#078fa8',fillOpacity:1}).addTo(layers));report()}
 function restore(raw){const s=JSON.parse(raw);path=s.path||[];stops=s.stops||[];draw()}
 function setMode(m,n){mode=m;name=n||'';document.getElementById('hint').textContent=m==='route'?'Tap along the road to draw':m==='stop'?'Enter a stop name, then tap its location':'Tap a stop or route point to delete'}
-map.on('click',e=>{const p={latitude:e.latlng.lat,longitude:e.latlng.lng};if(mode==='route'){remember();path.push(p);draw()}else if(mode==='stop'){if(!name.trim()){alert('Enter a stop name first');return}remember();stops.push({...p,name:name.trim()});name='';parent.postMessage({type:'route-editor-stop-added'},'*');draw()}else{const click=map.latLngToContainerPoint(e.latlng);let best={kind:'',index:-1,distance:25};stops.forEach((s,i)=>{const d=click.distanceTo(map.latLngToContainerPoint([s.latitude,s.longitude]));if(d<best.distance)best={kind:'stop',index:i,distance:d}});path.forEach((p,i)=>{const d=click.distanceTo(map.latLngToContainerPoint([p.latitude,p.longitude]));if(d<best.distance)best={kind:'point',index:i,distance:d}});if(best.index<0){return}remember();if(best.kind==='stop')stops.splice(best.index,1);else path.splice(best.index,1);draw()}});
+map.on('click',e=>{const p={latitude:e.latlng.lat,longitude:e.latlng.lng};if(mode==='route'){remember();path.push(p);draw()}else if(mode==='stop'){if(!name.trim()){alert('Enter a stop name first');return}remember();
+function positionOnPath(point){
+ if(path.length<2)return Number.POSITIVE_INFINITY;
+ let cumulative=0,bestDistance=Number.POSITIVE_INFINITY,bestPosition=Number.POSITIVE_INFINITY;
+ const lat0=point.latitude*Math.PI/180,scaleX=111320*Math.cos(lat0),scaleY=111320;
+ const lengths=path.slice(0,-1).map((a,i)=>Math.hypot((path[i+1].longitude-a.longitude)*scaleX,(path[i+1].latitude-a.latitude)*scaleY));
+ for(let i=0;i<path.length-1;i++){
+  const a=path[i],b=path[i+1],ax=(a.longitude-point.longitude)*scaleX,ay=(a.latitude-point.latitude)*scaleY,bx=(b.longitude-point.longitude)*scaleX,by=(b.latitude-point.latitude)*scaleY,dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy||1;
+  const t=Math.max(0,Math.min(1,-(ax*dx+ay*dy)/len)),dist=(ax+t*dx)**2+(ay+t*dy)**2;
+  if(dist<bestDistance){bestDistance=dist;bestPosition=cumulative+lengths[i]*t;}
+  cumulative+=lengths[i];
+ }
+ return bestPosition;
+}
+const added={...p,name:name.trim()};
+const addedPosition=positionOnPath(added);
+if(Number.isFinite(addedPosition)){
+ const ordered=stops.map(s=>({stop:s,position:positionOnPath(s)}));
+ ordered.push({stop:added,position:addedPosition});
+ ordered.sort((a,b)=>a.position-b.position);
+ stops=ordered.map(item=>item.stop);
+}else{stops.push(added)}
+name='';parent.postMessage({type:'route-editor-stop-added'},'*');draw()}else{const click=map.latLngToContainerPoint(e.latlng);let best={kind:'',index:-1,distance:25};stops.forEach((s,i)=>{const d=click.distanceTo(map.latLngToContainerPoint([s.latitude,s.longitude]));if(d<best.distance)best={kind:'stop',index:i,distance:d}});path.forEach((p,i)=>{const d=click.distanceTo(map.latLngToContainerPoint([p.latitude,p.longitude]));if(d<best.distance)best={kind:'point',index:i,distance:d}});if(best.index<0){return}remember();if(best.kind==='stop')stops.splice(best.index,1);else path.splice(best.index,1);draw()}});
 window.addEventListener('message',e=>{const d=e.data||{};if(d.type==='route-editor-mode')setMode(d.mode,d.name);if(d.type==='route-editor-undo'&&undoStack.length){redoStack.push(snapshot());restore(undoStack.pop())}if(d.type==='route-editor-redo'&&redoStack.length){undoStack.push(snapshot());restore(redoStack.pop())}if(d.type==='route-editor-clear'){if(path.length||stops.length){remember();path=[];stops=[];draw()}}if(d.type==='route-editor-load'){path=d.path||[];stops=d.stops||[];undoStack=[];redoStack=[];draw();if(path.length)map.fitBounds(L.latLngBounds(path.map(p=>[p.latitude,p.longitude])).pad(.15))}});
 draw();</script></body></html>`,[]);
  const send=(data:any)=>frame.current?.contentWindow?.postMessage(data,"*");
