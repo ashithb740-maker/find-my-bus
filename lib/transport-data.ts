@@ -2,7 +2,7 @@ export type Stop = {
   id: string; name: string; area: string; latitude: number; longitude: number; facilities: string[];
 };
 export type Route = {
-  id: string; label: string; origin: string; destination: string; stopNames: string[]; stopIds: string[];
+  id: string; label: string; origin: string; destination: string; stopNames: string[]; stopIds: string[]; routePath?: { latitude: number; longitude: number }[]; routeStops?: { name: string; latitude: number; longitude: number }[];
   duration: number; fare: number; frequency: string; firstBus: string; lastBus: string; color: string;
 };
 export type Trip = {
@@ -17,6 +17,8 @@ export type BusSeed = {
 export type LiveBus = BusSeed & {
   latitude: number; longitude: number; currentStop: string; nextStop: string;
   eta: number; speed: number; heading: number; lastUpdated: number;
+  /** Canonical progress from route origin to destination, independent of travel direction. */
+  gpsProgress?: number; directionCandidate?: "FORWARD" | "REVERSE"; directionVotes?: number;
 };
 export const DEMO_CENTER = { latitude: 12.9102, longitude: 74.8465 };
 export const STOPS: Stop[] = [
