@@ -17,6 +17,8 @@ export type BusSeed = {
 export type LiveBus = BusSeed & {
   latitude: number; longitude: number; currentStop: string; nextStop: string;
   eta: number; speed: number; heading: number; lastUpdated: number;
+  /** Canonical progress from route origin to destination, independent of travel direction. */
+  gpsProgress?: number; directionCandidate?: "FORWARD" | "REVERSE"; directionVotes?: number;
 };
 export const DEMO_CENTER = { latitude: 12.9102, longitude: 74.8465 };
 export const STOPS: Stop[] = [

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React,{createContext,useCallback,useContext,useEffect,useMemo,useState} from "react";
-import {advanceBus,hydrateBus,progressFromCoordinates,routeStopIds,STOPS,type LiveBus,type BusSeed,type Route,type Trip} from "./transport-data";
+import {advanceBus,hydrateBus,routeStopIds,STOPS,type LiveBus,type BusSeed,type Route,type Trip} from "./transport-data";
 type Alert={id:string;busId:string;stopName:string;threshold:number;enabled:boolean};
 type AppStateValue={buses:LiveBus[];routes:Route[];trips:Trip[];savedBuses:string[];savedRoutes:string[];savedStops:string[];alerts:Alert[];isOffline:boolean;demoLocation:boolean;toggleSaved:(kind:"bus"|"route"|"stop",id:string)=>void;addAlert:(busId:string,stopName:string)=>void;removeAlert:(id:string)=>void;setOffline:(v:boolean)=>void;setDemoLocation:(v:boolean)=>void;addRoute:(x:{id:string;label:string;origin:string;destination:string;stopNames:string[]})=>void;updateRoute:(id:string,x:{origin:string;destination:string;stopNames:string[];routePath?:{latitude:number;longitude:number}[];routeStops?:{name:string;latitude:number;longitude:number}[]})=>void;removeRoute:(id:string)=>void;addTrip:(x:{routeId:string;busId:string;direction:"FORWARD"|"REVERSE";departureTime:string;arrivalTime:string;breakMinutes?:number})=>void;updateTrip:(id:string,x:{routeId:string;busId:string;direction:"FORWARD"|"REVERSE";departureTime:string;arrivalTime:string;breakMinutes?:number})=>void;removeTrip:(id:string)=>void;removeBus:(id:string)=>void;updateBusTelemetry:(id:string,p:{latitude:number;longitude:number;speed:number;heading:number})=>void};
 const C=createContext<AppStateValue|null>(null);const KEY="find-my-bus-local-state-v2";
@@ -13,23 +13,53 @@ export function AppStateProvider({children}:{children:React.ReactNode}){
  const updateBusTelemetry=useCallback((id:string,p:{latitude:number;longitude:number;speed:number;heading:number})=>setBuses(current=>current.map(bus=>{
   if(bus.id!==id)return bus;
   const route=routes.find(item=>item.id===bus.routeId);
-  let ordered=route?.routeStops?.length?route.routeStops.map(stop=>({name:stop.name,latitude:Number(stop.latitude),longitude:Number(stop.longitude)})).filter(stop=>Number.isFinite(stop.latitude)&&Number.isFinite(stop.longitude)):[];
-  if(!ordered.length&&bus.stopNames?.length){const names=bus.direction==="REVERSE"?[...bus.stopNames].reverse():bus.stopNames;const aliases:Record<string,string>={"lalbagh (ksrtc bus stand)":"lalbagh","kadri park":"kadri","nanthoor":"nanthoor","kpt":"kpt","mallikatte":"mallikatte","bendoor":"bendoorwell","kankanady":"kankanady","pumpwell":"pumpwell","padil":"padil"};ordered=names.map(name=>{const normalized=name.trim().toLowerCase();const stop=STOPS.find(item=>item.name.toLowerCase()===normalized||item.id===normalized.replace(/[^a-z0-9]+/g,"-")||item.id===aliases[normalized]);return stop?{name,latitude:stop.latitude,longitude:stop.longitude}:null}).filter((stop):stop is {name:string;latitude:number;longitude:number}=>!!stop);}
-  if(bus.direction==="REVERSE"&&route?.routeStops?.length)ordered=[...ordered].reverse();
-  let progress=progressFromCoordinates(bus.stopNames,p.latitude,p.longitude),currentStop=bus.currentStop,nextStop=bus.nextStop;
-  if(ordered.length>=2){
-    const latScale=111320,lonScale=111320*Math.cos(p.latitude*Math.PI/180);let best=Infinity,bestIndex=0,bestLocal=0;
-    for(let i=0;i<ordered.length-1;i++){const a=ordered[i],b=ordered[i+1],ax=(a.longitude-p.longitude)*lonScale,ay=(a.latitude-p.latitude)*latScale,bx=(b.longitude-p.longitude)*lonScale,by=(b.latitude-p.latitude)*latScale,dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,-(ax*dx+ay*dy)/len)),dist=(ax+t*dx)**2+(ay+t*dy)**2;if(dist<best){best=dist;bestIndex=i;bestLocal=t;}}
-    progress=Math.max(0,Math.min(.999,(bestIndex+bestLocal)/(ordered.length-1)));
-    currentStop=ordered[bestIndex].name;nextStop=ordered[Math.min(bestIndex+1,ordered.length-1)].name;
-  }else if(bus.stopNames?.length){
-    const names=bus.direction==="REVERSE"?[...bus.stopNames].reverse():bus.stopNames;
-    const segment=Math.min(Math.floor(progress*Math.max(1,names.length-1)),names.length-2);
-    currentStop=names[Math.max(0,segment)]??bus.currentStop;nextStop=names[Math.min(names.length-1,Math.max(0,segment)+1)]??bus.nextStop;
+  // Keep one canonical stop order (Lalbagh -> Padil). Direction is inferred from GPS progress.
+  let stops=route?.routeStops?.length
+    ? route.routeStops.map(stop=>({name:stop.name,latitude:Number(stop.latitude),longitude:Number(stop.longitude)})).filter(stop=>Number.isFinite(stop.latitude)&&Number.isFinite(stop.longitude))
+    : [];
+  if(!stops.length){
+    const names=route?.stopNames?.length?route.stopNames:(bus.stopNames??[]);
+    const aliases:Record<string,string>={"lalbagh (ksrtc bus stand)":"lalbagh","kadri park":"kadri","nanthoor":"nanthoor","kpt":"kpt","mallikatte":"mallikatte","bendoor":"bendoorwell","kankanady":"kankanady","pumpwell":"pumpwell","padil":"padil"};
+    stops=names.map(name=>{const normalized=name.trim().toLowerCase();const stop=STOPS.find(item=>item.name.toLowerCase()===normalized||item.id===normalized.replace(/[^a-z0-9]+/g,"-")||item.id===aliases[normalized]);return stop?{name,latitude:stop.latitude,longitude:stop.longitude}:null;}).filter((stop):stop is {name:string;latitude:number;longitude:number}=>!!stop);
   }
-  const remainingStops=ordered.length?Math.max(0,ordered.length-1-Math.floor(progress*(ordered.length-1))):1;
-  const eta=Math.max(1,Math.round(remainingStops*4+Math.max(0,1-(progress*(ordered.length-1)%1))*3));
-  return {...bus,...p,progress,currentStop,nextStop,eta,lastUpdated:Date.now()};
+  let rawProgress=bus.gpsProgress??bus.progress??0,bestDistance=Infinity,bestIndex=0,bestLocal=0;
+  if(stops.length>=2){
+    const latScale=111320,lonScale=111320*Math.cos(p.latitude*Math.PI/180);
+    for(let i=0;i<stops.length-1;i++){
+      const a=stops[i],b=stops[i+1],ax=(a.longitude-p.longitude)*lonScale,ay=(a.latitude-p.latitude)*latScale,bx=(b.longitude-p.longitude)*lonScale,by=(b.latitude-p.latitude)*latScale,dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy||1;
+      const t=Math.max(0,Math.min(1,-(ax*dx+ay*dy)/len)),dist=(ax+t*dx)**2+(ay+t*dy)**2;
+      if(dist<bestDistance){bestDistance=dist;bestIndex=i;bestLocal=t;}
+    }
+    rawProgress=Math.max(0,Math.min(1,(bestIndex+bestLocal)/(stops.length-1)));
+  }
+  let direction: "FORWARD"|"REVERSE"=bus.direction??"FORWARD";
+  let directionCandidate=bus.directionCandidate,directionVotes=bus.directionVotes??0;
+  const distanceMetres=Math.sqrt(bestDistance);
+  if(bus.gpsProgress===undefined&&stops.length>=2&&p.speed>=8&&distanceMetres<250){
+    const a=stops[bestIndex],b=stops[bestIndex+1],bearing=(Math.atan2((b.longitude-a.longitude)*Math.cos(p.latitude*Math.PI/180),b.latitude-a.latitude)*180/Math.PI+360)%360;
+    const angleDiff=(x:number,y:number)=>Math.abs(((x-y+540)%360)-180);
+    const forwardDiff=angleDiff(p.heading,bearing),reverseDiff=angleDiff(p.heading,(bearing+180)%360);
+    if(reverseDiff+35<forwardDiff)direction="REVERSE";
+  }else if(bus.gpsProgress!==undefined&&p.speed>=3&&distanceMetres<250){
+    const delta=rawProgress-bus.gpsProgress;
+    if(Math.abs(delta)>=0.004){
+      const observed: "FORWARD"|"REVERSE"=delta>0?"FORWARD":"REVERSE";
+      if(observed===direction){directionCandidate=undefined;directionVotes=0;}
+      else if(directionCandidate===observed){directionVotes+=1;}
+      else{directionCandidate=observed;directionVotes=1;}
+      // Require three consecutive meaningful GPS movements before reversing the passenger chart.
+      if(directionVotes>=3){direction=observed;directionCandidate=undefined;directionVotes=0;}
+    }else if(Math.abs(delta)<0.0015){directionCandidate=undefined;directionVotes=0;}
+  }
+  const travelStops=direction==="REVERSE"?[...stops].reverse():stops;
+  const travelProgress=direction==="REVERSE"?1-rawProgress:rawProgress;
+  const scaled=Math.max(0,Math.min(.999,travelProgress))*Math.max(1,travelStops.length-1);
+  const segment=Math.min(Math.floor(scaled),Math.max(0,travelStops.length-2));
+  const currentStop=travelStops[segment]?.name??bus.currentStop;
+  const nextStop=travelStops[Math.min(segment+1,travelStops.length-1)]?.name??currentStop;
+  const remainingStops=Math.max(0,travelStops.length-1-Math.floor(scaled));
+  const eta=Math.max(1,Math.round(remainingStops*4+Math.max(0,1-(scaled%1))*3));
+  return {...bus,...p,direction,progress:travelProgress,gpsProgress:rawProgress,directionCandidate,directionVotes,currentStop,nextStop,eta,lastUpdated:Date.now()};
 })),[routes]);
  const value=useMemo<AppStateValue>(()=>({buses,routes,trips,savedBuses,savedRoutes,savedStops,alerts,isOffline,demoLocation,
  toggleSaved:(k,id)=>{const s=k==="bus"?setSavedBuses:k==="route"?setSavedRoutes:setSavedStops;s(c=>c.includes(id)?c.filter(x=>x!==id):[...c,id]);},
